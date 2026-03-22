@@ -1,25 +1,22 @@
-import jwt from 'jsonwebtoken';
-import UserModel from '../Models/User.model';
+import jwt from 'jsonwebtoken'
 
-export const IdentifyUser = async (req, res, next) => {
-    let token = req.cookies.token;
-
-    if (!token) {
+export const IdentifyUser=async(req,res,next)=>{
+    let decoded;
+    const {token}=req.cookies
+    if(!token){
         return res.status(401).json({
-            message: "Unauthorized",
-            err: "No token provided",
-            success: false
-        });
+            message:"User Not authorized",
+            success:false
+        })
     }
-    let decoded
-    try {
-        decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch (err) {
-        return res.status(401).json({
-            message: "Invalid token",
-            success: false
-        });
+    try{
+        decoded=await jwt.verify(token,process.env.JWT_SECRET);
+    }catch(err){
+        return res.status(400).json({
+            message:"Error encountered",
+            success:false
+        })
     }
-    req.user = decoded;
-    next();
-};
+    req.user=decoded
+    next()
+}

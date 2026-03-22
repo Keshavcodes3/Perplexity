@@ -1,35 +1,4 @@
-# Dependencies
-node_modules/
-package-lock.json
-package.json
-yarn.lock
-
-# Environment variables
+node_modules
 .env
-.env.local
-.env.*.local
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*.code-workspace
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Build
-dist/
-build/
-
-# Misc
-.cache/
-.parcel-cache/
+package.json
+package-lock.json
