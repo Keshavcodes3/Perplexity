@@ -1,9 +1,8 @@
 import React from 'react'
-
-const App = () => {
-  return (
-    <div>App</div>
-  )
+import {useSelector} from 'react-redux'
+const App = ({ children }) => {
+  const {user}=useSelector((state)=>state.auth)
+  return children
 }
 
 export default App

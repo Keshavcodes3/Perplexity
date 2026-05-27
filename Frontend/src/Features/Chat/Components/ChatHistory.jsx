@@ -3,6 +3,7 @@ import { MessageSquare, MoreHorizontal } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { setActiveConversationId } from "../Redux/chat.slice";
 import ActionMenu from "../../Projects/Components/ProjectPopUp";
+import { createPortal } from "react-dom";
 
 const ChatHistory = () => {
   const dispatch = useDispatch();
@@ -10,9 +11,9 @@ const ChatHistory = () => {
     (state) => state.chat
   );
 
-  const [openMenuId, setOpenMenuId] =
-    useState(null);
-
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [menuCoords, setMenuCoords] = useState({ top: 0, left: 0 });
+  
   const menuRef = useRef(null);
 
   const setActiveChat = ({ convoId }) => {
@@ -21,10 +22,18 @@ const ChatHistory = () => {
 
   const toggleMenu = (e, convoId) => {
     e.stopPropagation();
-
-    setOpenMenuId((prev) =>
-      prev === convoId ? null : convoId
-    );
+    
+    if (openMenuId === convoId) {
+      setOpenMenuId(null);
+    } else {
+      const rect = e.currentTarget.getBoundingClientRect();
+      // Position the menu to the right of the more icon
+      setMenuCoords({
+        top: rect.top,
+        left: rect.right + 15,
+      });
+      setOpenMenuId(convoId);
+    }
   };
 
   // close when clicked outside
@@ -54,15 +63,7 @@ const ChatHistory = () => {
   return (
     <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1 scrollbar-hide">
       {conversations?.map((item) => (
-        <div
-          key={item.convoId}
-          className="relative"
-          ref={
-            openMenuId === item.convoId
-              ? menuRef
-              : null
-          }
-        >
+        <div key={item.convoId} className="relative">
           <button
             onClick={() =>
               setActiveChat({
@@ -90,17 +91,20 @@ const ChatHistory = () => {
             </span>
           </button>
 
-          {openMenuId ===
-            item.convoId && (
-            <div className="absolute right-2 top-11 z-50">
-              <ActionMenu
-                convoId={item.convoId}
-                onClose={() =>
-                  setOpenMenuId(null)
-                }
-              />
-            </div>
-          )}
+          {openMenuId === item.convoId &&
+            createPortal(
+              <div 
+                ref={menuRef}
+                className="fixed z-[9999]" 
+                style={{ top: menuCoords.top, left: menuCoords.left }}
+              >
+                <ActionMenu
+                  convoId={item.convoId}
+                  onClose={() => setOpenMenuId(null)}
+                />
+              </div>,
+              document.body
+            )}
         </div>
       ))}
     </div>

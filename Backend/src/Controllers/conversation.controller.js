@@ -15,6 +15,10 @@ export const createFirstConversation = async (req, res) => {
             })
         }
         const { message } = req.body
+        let { mode } = req.body
+        if (!mode) {
+            mode = "casual"
+        }
         if (!message || message == null) {
             return res.status(400).json({
                 message: "Message should be greater than one char",
@@ -28,7 +32,7 @@ export const createFirstConversation = async (req, res) => {
         res.flushHeaders();
 
         const title = await generateChatTitle({ message })
-        
+
         const conversation = await ConversationModel.create({
             user: userId,
             title: title
@@ -40,7 +44,7 @@ export const createFirstConversation = async (req, res) => {
         });
 
         res.write(JSON.stringify({ type: 'start', title, conversationId: conversation._id }) + '\n');
-        
+
         const result = await generateMessageResponse({
             messages: [{ role: "user", content: message }],
             res
@@ -138,7 +142,7 @@ export const takeFollowUp = async (req, res) => {
             role: "ai",
             content: result
         })
-        
+
         res.write(JSON.stringify({
             type: 'done',
             message: "Message created",
