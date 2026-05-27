@@ -1,7 +1,8 @@
 import { ChatMistralAI } from "@langchain/mistralai";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatGroq } from "@langchain/groq";
 import { SystemMessage, AIMessage, HumanMessage } from "langchain"
-import { createConvoTitle, messageResponse } from "../Prompts/conversation.prompt";
+import { createConvoTitle, messageResponse } from "../Prompts/conversation.prompt.js";
 
 
 
@@ -18,6 +19,11 @@ const geminiModel = new ChatGoogleGenerativeAI({
     apiKey: process.env.GEMINI_API_KEY
 });
 
+const groqModel = new ChatGroq({
+    apiKey: process.env.GROQ_API_KEY,
+    model: "llama-3.1-8b-instant"
+});
+
 
 
 
@@ -25,12 +31,17 @@ const geminiModel = new ChatGoogleGenerativeAI({
 /*-----------------------Functions to create Chat Title-------------------- */
 
 export const generateChatTitle = async ({ message }) => {
-    const aiPrompt = createConvoTitle()
-    const res = mistralModel.invoke([
-        new SystemMessage(aiPrompt),
-        new HumanMessage(message)
-    ])
-    return (await res).content || "New chat"
+    try {
+        const aiPrompt = createConvoTitle()
+        const res = mistralModel.invoke([
+            new SystemMessage(aiPrompt),
+            new HumanMessage(message)
+        ])
+        return (await res).content || "New chat"
+    } catch (err) {
+        console.error("Mistral title generation failed:", err.message);
+        return "New chat";
+    }
 }
 
 
@@ -49,29 +60,38 @@ const formattedMessage = ({ messages }) => {
 }
 
 
-export const generateMessageResponse = async ({ messages }) => {
+export const generateMessageResponse = async ({ messages, res }) => {
     const message = formattedMessage({ messages })
     try {
         const prompt = messageResponse()
-        const response = await geminiModel.invoke([
+        const response = await groqModel.stream([
             new SystemMessage(prompt),
             ...message
         ])
-        return response.content
+        let accumulatedText = "";
+        for await (const chunk of response) {
+            const text = chunk.content || ""
+            accumulatedText += text;
+            res.write(JSON.stringify({ type: 'chunk', text }) + '\n')
+        }
+        return accumulatedText;
     } catch (err) {
         //Fallback
         try {
             const prompt = messageResponse()
-            const response = await geminiModel.invoke([
+            const response = await geminiModel.stream([
                 new SystemMessage(prompt),
                 ...message
             ])
-            return response.content
+            let accumulatedText = "";
+            for await (const chunk of response) {
+                const text = chunk.text || ""
+                accumulatedText += text;
+                res.write(JSON.stringify({ type: 'chunk', text }) + '\n')
+            }
+            return accumulatedText;
         } catch (err) {
-            return res.status(500).json({
-                message: "Internal server error",
-                error: process.env.MODE == "dev" ? err?.message : "Something went wrong"
-            })
+            throw err;
         }
     }
 }

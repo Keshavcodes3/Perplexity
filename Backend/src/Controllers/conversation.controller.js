@@ -21,20 +21,17 @@ export const createFirstConversation = async (req, res) => {
                 success: false
             })
         }
-        const title = await generateChatTitle({ message })
-        const result = await generateMessageResponse({
-            messages: [{ role: "user", content: message }],
-        });
 
-        //?create convo and add userMessage / AiMessage
+        res.setHeader("Content-Type", "application/x-ndjson");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+        res.flushHeaders();
+
+        const title = await generateChatTitle({ message })
+        
         const conversation = await ConversationModel.create({
             user: userId,
             title: title
-        })
-        const AIMessage = await chatModel.create({
-            conversationId: conversation._id,
-            role: "ai",
-            content: result
         })
         const userMessage = await chatModel.create({
             conversationId: conversation._id,
@@ -42,7 +39,21 @@ export const createFirstConversation = async (req, res) => {
             content: message,
         });
 
-        return res.status(201).json({
+        res.write(JSON.stringify({ type: 'start', title, conversationId: conversation._id }) + '\n');
+        
+        const result = await generateMessageResponse({
+            messages: [{ role: "user", content: message }],
+            res
+        });
+
+        const AIMessage = await chatModel.create({
+            conversationId: conversation._id,
+            role: "ai",
+            content: result
+        })
+
+        res.write(JSON.stringify({
+            type: 'done',
             message: "New conversation created",
             title: title,
             conversationId: conversation._id,
@@ -52,19 +63,26 @@ export const createFirstConversation = async (req, res) => {
                 userMessage: userMessage
             },
             success: true
-        })
+        }) + '\n');
+        return res.end();
     } catch (err) {
-        return res.status(500).json({
-            message: "Internal server Error",
-            success: false,
-            error: process.env.MODE == "dev" ? err?.message : "Something went wrong"
-        })
+        if (!res.headersSent) {
+            return res.status(500).json({
+                message: "Internal server Error",
+                success: false,
+                error: process.env.MODE == "dev" ? err?.message : "Something went wrong"
+            });
+        } else {
+            res.write(JSON.stringify({ type: 'error', error: err?.message || "Something went wrong" }) + '\n');
+            return res.end();
+        }
     }
 }
 
 
 export const takeFollowUp = async (req, res) => {
     try {
+
         const userId = req.user.id
         const user = await UserModel.findById(userId)
         if (!user) {
@@ -73,6 +91,11 @@ export const takeFollowUp = async (req, res) => {
                 success: false
             })
         }
+        res.setHeader("Content-Type", "application/x-ndjson");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+        res.flushHeaders();
+
         const { conversationId } = req.params
         if (!conversationId || conversationId == null) {
             return res.status(400).json({
@@ -88,6 +111,12 @@ export const takeFollowUp = async (req, res) => {
             })
         }
         const { message } = req.body
+        if (!message) {
+            return res.status(400).json({
+                message: "No message provided",
+                success: false
+            })
+        }
         const userMessage = await chatModel.create({
             conversationId: conversationId,
             role: "user",
@@ -102,20 +131,16 @@ export const takeFollowUp = async (req, res) => {
                 success: false
             })
         }
-        if (!message) {
-            return res.status(400).json({
-                message: "No message provided",
-                success: false
-            })
-        }
 
-        const result = await generateMessageResponse({ messages: allMessages })
+        const result = await generateMessageResponse({ messages: allMessages, res })
         const AiMessage = await chatModel.create({
             conversationId: conversationId,
             role: "ai",
             content: result
         })
-        return res.status(201).json({
+        
+        res.write(JSON.stringify({
+            type: 'done',
             message: "Message created",
             title: conversation.title,
             conversation: conversation,
@@ -124,13 +149,19 @@ export const takeFollowUp = async (req, res) => {
                 userMessage: userMessage
             },
             success: true
-        })
+        }) + '\n');
+        return res.end();
     } catch (err) {
-        return res.status(500).json({
-            message: "Internal server Error",
-            success: false,
-            error: process.env.MODE == "dev" ? err?.message : "Something went wrong"
-        })
+        if (!res.headersSent) {
+            return res.status(500).json({
+                message: "Internal server Error",
+                success: false,
+                error: process.env.MODE == "dev" ? err?.message : "Something went wrong"
+            });
+        } else {
+            res.write(JSON.stringify({ type: 'error', error: err?.message || "Something went wrong" }) + '\n');
+            return res.end();
+        }
     }
 }
 
