@@ -1,7 +1,7 @@
 import React from 'react';
 import { Sparkles, Plus, FolderGit2, BarChart2, LogOut } from 'lucide-react';
 import ChatHistory from './ChatHistory.jsx';
-import { useSelector, useDispatch } from "react-redux";import { useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux"; import { useNavigate } from "react-router-dom";
 import { setActiveConversationId } from '../Redux/chat.slice.js';
 const Sidebar = () => {
   let { activeConversationId } = useSelector((state) => state.chat)

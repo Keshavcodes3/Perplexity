@@ -5,7 +5,6 @@ import remarkGfm from "remark-gfm";
 
 export default function ChatBubble({ role, message }) {
   const isUser = role === "user";
-
   return (
     <div className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}>
       <div className="flex max-w-3xl items-start gap-2">
@@ -23,7 +22,7 @@ export default function ChatBubble({ role, message }) {
           }`}
         >
           {isUser ? (
-            <p className="whitespace-pre-wrap leading-7">{message}</p>
+            <p className="whitespace-pre-wrap leading-7">{message.content}</p>
           ) : (
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
@@ -77,7 +76,7 @@ export default function ChatBubble({ role, message }) {
                 ),
               }}
             >
-              {message}
+              {message.content}
             </ReactMarkdown>
           )}
         </div>

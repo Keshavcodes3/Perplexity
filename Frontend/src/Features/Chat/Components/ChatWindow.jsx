@@ -1,31 +1,42 @@
-import React, { useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
-import SuggestionCards from './SuggestionCards.jsx';
-import ChatInput from './ChatInput.jsx';
-import NoChat from './NoChat.jsx';
-import { useSelector } from 'react-redux';
-import Chat from './Chat.jsx';
-
+import React, { useRef, useEffect } from "react";
+import { useSelector } from "react-redux";
+import ChatInput from "./ChatInput.jsx";
+import NoChat from "./NoChat.jsx";
+import Chat from "./Chat.jsx";
+import { Sparkles } from "lucide-react";
 
 const ChatWindow = () => {
   const bottomRef = useRef(null);
-  const {activeConversationId}=useSelector((state)=>state.chat)
+
+  const {
+    activeConversationId,
+    loading,
+  } = useSelector((state) => state.chat);
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
+    bottomRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+  }, [activeConversationId, loading]);
 
   return (
-    <div className="flex-1 flex flex-col h-screen bg-white overflow-hidden relative">
-
-      {/* Messages Area */}
+    <div className="relative flex h-screen flex-1 flex-col overflow-hidden bg-white">
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto">
-        {
-          activeConversationId==null?<NoChat/>:<Chat/>
-        }
+        {activeConversationId == null ? (
+          <NoChat />
+        ) : (
+          <>
+            <Chat />
+
+
+
+            <div ref={bottomRef} />
+          </>
+        )}
       </div>
 
-      {/* Input Area */}
+      {/* Input */}
       <div className="sticky bottom-0 bg-gradient-to-t from-white via-white to-transparent pt-4">
         <ChatInput />
       </div>
@@ -34,4 +45,3 @@ const ChatWindow = () => {
 };
 
 export default ChatWindow;
-

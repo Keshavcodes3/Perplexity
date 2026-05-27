@@ -5,17 +5,109 @@ const API=axios.create({
     withCredentials:true
 })
 
-export const startChat=async(message)=>{
-    const response=await API.post('/',{
-        message
-    })
-    return response.data
+export const streamStartChat = async (message, onStart, onChunk, onDone, onError) => {
+    try {
+        const response = await fetch(`${BASEURL}/api/conversations/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({ message })
+        });
+        
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.message || 'Error starting chat');
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); 
+            
+            for (const line of lines) {
+                if (line.trim()) {
+                    try {
+                        const data = JSON.parse(line);
+                        if (data.type === 'start') {
+                            if(onStart) onStart(data);
+                        } else if (data.type === 'chunk') {
+                            onChunk(data.text);
+                        } else if (data.type === 'done') {
+                            onDone(data);
+                        } else if (data.type === 'error') {
+                            throw new Error(data.error || "Stream error");
+                        }
+                    } catch (e) {
+                        console.error("Error parsing stream line:", line, e);
+                        onError(e.message);
+                    }
+                }
+            }
+        }
+    } catch (err) {
+        onError(err.message);
+    }
 }
 
 
-export const takeFollowUp=async({conversationId,message})=>{
-    const response=await API.post(`/sendMessage/${conversationId}`,{message})
-    return response.data
+export const streamTakeFollowUp = async ({ conversationId, message }, onChunk, onDone, onError) => {
+    try {
+        const response = await fetch(`${BASEURL}/api/conversations/sendMessage/${conversationId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({ message })
+        });
+        
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.message || 'Error sending message');
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+            
+            for (const line of lines) {
+                if (line.trim()) {
+                    try {
+                        const data = JSON.parse(line);
+                        if (data.type === 'chunk') {
+                            onChunk(data.text);
+                        } else if (data.type === 'done') {
+                            onDone(data);
+                        } else if (data.type === 'error') {
+                            throw new Error(data.error || "Stream error");
+                        }
+                    } catch (e) {
+                        console.error("Error parsing stream line:", line, e);
+                        onError(e.message);
+                    }
+                }
+            }
+        }
+    } catch (err) {
+        onError(err.message);
+    }
 }
 
 

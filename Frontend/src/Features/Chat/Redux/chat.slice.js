@@ -36,6 +36,19 @@ const chatSlice = createSlice({
             }
             state.messages[chatId].push(data)
         },
+        appendMessageChunk: (state, action) => {
+            const { chatId, chunk, role } = action.payload;
+            if (!state.messages[chatId]) {
+                state.messages[chatId] = [];
+            }
+            const messages = state.messages[chatId];
+            if (messages.length > 0 && messages[messages.length - 1].role === role) {
+                if (!messages[messages.length - 1].message) messages[messages.length - 1].message = { content: "" };
+                messages[messages.length - 1].message.content += chunk;
+            } else {
+                messages.push({ message: { content: chunk }, role: role });
+            }
+        },
         setError: (state, action) => {
             state.error = action.payload
         },
@@ -59,6 +72,6 @@ const chatSlice = createSlice({
 })
 
 
-export const { setActiveConversationId, setError, setLoading, deleteConversation, addConversations, addMessages } = chatSlice.actions
+export const { setActiveConversationId, setError, setLoading, deleteConversation, addConversations, addMessages, appendMessageChunk } = chatSlice.actions
 
 export default chatSlice.reducer

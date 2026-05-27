@@ -10,6 +10,15 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on('error', (err) => {
+            console.log('[proxy error]', err.message);
+          });
+          proxy.on('proxyRes', (proxyRes) => {
+            // Disable response buffering for streaming endpoints
+            proxyRes.headers['x-accel-buffering'] = 'no';
+          });
+        },
       }
     }
   }

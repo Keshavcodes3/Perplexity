@@ -2,16 +2,24 @@ import React, { useState } from 'react';
 import { Paperclip, Mic, SendHorizontal } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { useChat } from '../Hooks/useChat';
+import { setLoading } from '../Redux/chat.slice';
 const ChatInput = () => {
   const [query, setQuery] = useState('');
+  const { loading } = useSelector((state) => state.chat)
   const { activeConversationId } = useSelector((state) => state.chat)
-  const { takeFollowUpHook } = useChat()
+  const { takeFollowUpHook, startChatHook } = useChat()
   const sendMessage = async () => {
-    const data = await takeFollowUpHook({
-      conversationId: activeConversationId,
-      message:query
-    })
-    console.log(data)
+    if (!activeConversationId) {
+      const data = await startChatHook({
+        message: query
+      })
+    } else {
+      const data = await takeFollowUpHook({
+        conversationId: activeConversationId,
+        message: query
+      })
+    }
+    setQuery("")
    }
   return (
     <div className="max-w-3xl mx-auto w-full px-4 pb-6">
