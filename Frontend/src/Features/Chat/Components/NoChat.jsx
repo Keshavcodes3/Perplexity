@@ -1,7 +1,5 @@
-import React from "react";
 import {
   Sparkles,
-  Image as ImageIcon,
   Map,
   ArrowUpRight,
   Lightbulb,
@@ -23,7 +21,7 @@ const cards = [
     icon: Lightbulb,
     color: "text-blue-500 bg-blue-50 border-blue-100",
     hoverBg: "hover:border-blue-200 hover:bg-blue-50/30",
-    mode: "explain",
+    mode: "explanation",
   },
   {
     title: "Roadmaps",

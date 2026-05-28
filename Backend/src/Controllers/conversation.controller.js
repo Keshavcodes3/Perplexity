@@ -378,3 +378,180 @@ export const getOneConversation = async (req, res) => {
         });
     }
 };
+
+const startOfDay = (date) => {
+    const value = new Date(date);
+    value.setHours(0, 0, 0, 0);
+    return value;
+};
+
+const startOfWeek = (date) => {
+    const value = startOfDay(date);
+    const day = value.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    value.setDate(value.getDate() + diff);
+    return value;
+};
+
+const startOfMonth = (date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1);
+};
+
+const formatDateKey = (date) => date.toISOString().slice(0, 10);
+
+const formatMonthKey = (date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+const buildDailyBuckets = (messages, days = 7) => {
+    const today = startOfDay(new Date());
+    const buckets = [];
+
+    for (let index = days - 1; index >= 0; index -= 1) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - index);
+        buckets.push({
+            key: formatDateKey(date),
+            label: date.toLocaleDateString("en-US", { weekday: "short" }),
+            messages: 0,
+            userMessages: 0,
+            aiMessages: 0,
+        });
+    }
+
+    const bucketByKey = new Map(buckets.map((bucket) => [bucket.key, bucket]));
+
+    messages.forEach((message) => {
+        if (!message.createdAt) return;
+
+        const key = formatDateKey(startOfDay(message.createdAt));
+        const bucket = bucketByKey.get(key);
+        if (!bucket) return;
+
+        bucket.messages += 1;
+        if (message.role === "user") bucket.userMessages += 1;
+        if (message.role === "ai") bucket.aiMessages += 1;
+    });
+
+    return buckets;
+};
+
+const buildWeeklyBuckets = (messages, weeks = 8) => {
+    const thisWeek = startOfWeek(new Date());
+    const buckets = [];
+
+    for (let index = weeks - 1; index >= 0; index -= 1) {
+        const date = new Date(thisWeek);
+        date.setDate(thisWeek.getDate() - index * 7);
+        buckets.push({
+            key: formatDateKey(date),
+            label: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+            messages: 0,
+            userMessages: 0,
+            aiMessages: 0,
+        });
+    }
+
+    const bucketByKey = new Map(buckets.map((bucket) => [bucket.key, bucket]));
+
+    messages.forEach((message) => {
+        if (!message.createdAt) return;
+
+        const key = formatDateKey(startOfWeek(message.createdAt));
+        const bucket = bucketByKey.get(key);
+        if (!bucket) return;
+
+        bucket.messages += 1;
+        if (message.role === "user") bucket.userMessages += 1;
+        if (message.role === "ai") bucket.aiMessages += 1;
+    });
+
+    return buckets;
+};
+
+const buildMonthlyBuckets = (messages, months = 6) => {
+    const thisMonth = startOfMonth(new Date());
+    const buckets = [];
+
+    for (let index = months - 1; index >= 0; index -= 1) {
+        const date = new Date(thisMonth);
+        date.setMonth(thisMonth.getMonth() - index);
+        buckets.push({
+            key: formatMonthKey(date),
+            label: date.toLocaleDateString("en-US", { month: "short" }),
+            messages: 0,
+            userMessages: 0,
+            aiMessages: 0,
+        });
+    }
+
+    const bucketByKey = new Map(buckets.map((bucket) => [bucket.key, bucket]));
+
+    messages.forEach((message) => {
+        if (!message.createdAt) return;
+
+        const key = formatMonthKey(startOfMonth(message.createdAt));
+        const bucket = bucketByKey.get(key);
+        if (!bucket) return;
+
+        bucket.messages += 1;
+        if (message.role === "user") bucket.userMessages += 1;
+        if (message.role === "ai") bucket.aiMessages += 1;
+    });
+
+    return buckets;
+};
+
+export const getUsageAnalytics = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const conversations = await ConversationModel.find({ user: userId })
+            .select("_id mode projectId createdAt")
+            .lean();
+
+        const conversationIds = conversations.map((conversation) => conversation._id);
+        const messages = conversationIds.length
+            ? await chatModel
+                .find({ conversationId: { $in: conversationIds } })
+                .select("conversationId role createdAt")
+                .lean()
+            : [];
+
+        const modeCounts = conversations.reduce((acc, conversation) => {
+            const mode = normalizeMode(conversation.mode);
+            acc[mode] = (acc[mode] || 0) + 1;
+            return acc;
+        }, {});
+
+        const projectConversationCount = conversations.filter(
+            (conversation) => conversation.projectId
+        ).length;
+
+        return res.status(200).json({
+            message: "Usage analytics fetched successfully",
+            success: true,
+            data: {
+                totals: {
+                    conversations: conversations.length,
+                    messages: messages.length,
+                    userMessages: messages.filter((message) => message.role === "user").length,
+                    aiMessages: messages.filter((message) => message.role === "ai").length,
+                    projectConversations: projectConversationCount,
+                },
+                byMode: {
+                    casual: modeCounts.casual || 0,
+                    explanation: modeCounts.explanation || 0,
+                    roadmap: modeCounts.roadmap || 0,
+                },
+                daily: buildDailyBuckets(messages),
+                weekly: buildWeeklyBuckets(messages),
+                monthly: buildMonthlyBuckets(messages),
+            },
+        });
+    } catch (err) {
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+            error: process.env.MODE === "dev" ? err.message : "Something went wrong",
+        });
+    }
+};

@@ -8,32 +8,52 @@ const chatSlice = createSlice({
         conversations: [],
         messages: {},
         loading: false,
+        streamingConversationId: null,
         error: null,
     },
 
     reducers: {
         setActiveConversationId: (state, action) => {
             state.activeConversationId = action.payload;
+            state.error = null;
         },
 
         addConversations: (state, action) => {
-            const { convoId, convo, mode = "casual" } = action.payload;
+            const { convoId, convo, mode = "casual", createdAt, updatedAt } = action.payload;
 
-            const exists = state.conversations.find(
-                (c) => c.convoId === convoId
-            );
+            const existing = state.conversations.find((c) => c.convoId === convoId);
 
-            if (!exists) {
-                state.conversations.unshift({
-                    convoId,
-                    convo,
-                    mode,
-                });
+            if (existing) {
+                existing.convo = convo || existing.convo;
+                existing.mode = mode || existing.mode;
+                existing.createdAt = createdAt || existing.createdAt;
+                existing.updatedAt = updatedAt || existing.updatedAt;
+                return;
             }
+
+            state.conversations.unshift({
+                convoId,
+                convo: convo || "New Chat",
+                mode,
+                createdAt,
+                updatedAt,
+            });
         },
 
         setConversations: (state, action) => {
-            state.conversations = action.payload;
+            const uniqueById = new Map();
+
+            action.payload.forEach((conversation) => {
+                uniqueById.set(conversation.convoId, {
+                    convoId: conversation.convoId,
+                    convo: conversation.convo || "New Chat",
+                    mode: conversation.mode || "casual",
+                    createdAt: conversation.createdAt,
+                    updatedAt: conversation.updatedAt,
+                });
+            });
+
+            state.conversations = Array.from(uniqueById.values());
         },
 
         addMessages: (state, action) => {
@@ -62,22 +82,48 @@ const chatSlice = createSlice({
             }
 
             const messages = state.messages[chatId];
+            const lastMessage = messages[messages.length - 1];
 
-            if (
-                messages.length &&
-                messages[messages.length - 1].role === role
-            ) {
-                messages[messages.length - 1].message.content += chunk;
-            } else {
-                messages.push({
-                    message: { content: chunk },
-                    role,
-                });
+            if (lastMessage && lastMessage.role === role) {
+                lastMessage.message.content += chunk;
+                return;
             }
+
+            messages.push({
+                message: { content: chunk },
+                role,
+            });
+        },
+
+        removeLastMessage: (state, action) => {
+            const { chatId, role } = action.payload;
+            const messages = state.messages[chatId];
+
+            if (!messages?.length) return;
+
+            const lastMessage = messages[messages.length - 1];
+            if (!role || lastMessage.role === role) {
+                messages.pop();
+            }
+        },
+
+        updateConversationMeta: (state, action) => {
+            const { convoId, convo, mode, updatedAt } = action.payload;
+            const conversation = state.conversations.find((c) => c.convoId === convoId);
+
+            if (!conversation) return;
+
+            if (convo) conversation.convo = convo;
+            if (mode) conversation.mode = mode;
+            if (updatedAt) conversation.updatedAt = updatedAt;
         },
 
         setLoading: (state, action) => {
             state.loading = action.payload;
+        },
+
+        setStreamingConversationId: (state, action) => {
+            state.streamingConversationId = action.payload;
         },
 
         setError: (state, action) => {
@@ -96,6 +142,10 @@ const chatSlice = createSlice({
             if (state.activeConversationId === conversationId) {
                 state.activeConversationId = null;
             }
+
+            if (state.streamingConversationId === conversationId) {
+                state.streamingConversationId = null;
+            }
         },
     },
 });
@@ -106,8 +156,11 @@ export const {
     setConversations,
     addMessages,
     appendMessageChunk,
+    removeLastMessage,
+    updateConversationMeta,
     setConversationMessages,
     setLoading,
+    setStreamingConversationId,
     setError,
     deleteConversation,
 } = chatSlice.actions;

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MessageSquare, MoreHorizontal } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { setActiveConversationId } from "../Redux/chat.slice";

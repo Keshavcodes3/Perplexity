@@ -1,10 +1,11 @@
-import React from "react";
 import { Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 export default function ChatBubble({ role, message }) {
   const isUser = role === "user";
+  const isEmptyAiMessage = !isUser && !message.content;
+
   return (
     <div className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}>
       <div className="flex max-w-3xl items-start gap-2">
@@ -21,7 +22,19 @@ export default function ChatBubble({ role, message }) {
               : "rounded-bl-md border border-orange-100 bg-[#fffaf5] text-slate-800"
           }`}
         >
-          {isUser ? (
+          {isEmptyAiMessage ? (
+            <div className="flex h-5 items-center gap-1.5">
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" />
+              <span
+                className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400"
+                style={{ animationDelay: "150ms" }}
+              />
+              <span
+                className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400"
+                style={{ animationDelay: "300ms" }}
+              />
+            </div>
+          ) : isUser ? (
             <p className="whitespace-pre-wrap leading-7">{message.content}</p>
           ) : (
             <ReactMarkdown

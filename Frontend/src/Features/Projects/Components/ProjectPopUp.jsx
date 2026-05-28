@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   FolderPlus,
   ChevronRight,
@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useProject } from "../Hooks/useProject.jsx";
+import { useChat } from "../../Chat/Hooks/useChat.jsx";
 
 const ActionMenu = ({ convoId, onClose }) => {
   const [showProjects, setShowProjects] = useState(false);
@@ -20,6 +21,7 @@ const ActionMenu = ({ convoId, onClose }) => {
 
   const { projects } = useSelector((state) => state.project);
   const { addConversationToProjectHook, createProjectHook } = useProject();
+  const { deleteConversationHook } = useChat();
 
   useEffect(() => {
     if (showInlineCreate && newProjectInputRef.current) {
@@ -86,7 +88,7 @@ const ActionMenu = ({ convoId, onClose }) => {
             ) : (
               (projects || []).filter(Boolean).map((project) => (
                 <button
-                  key={project._id || Math.random()}
+                  key={project._id || project.title}
                   onClick={() => handleMoveToProject(project._id)}
                   className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-orange-50 hover:text-orange-600 group/item"
                 >
@@ -165,7 +167,10 @@ const ActionMenu = ({ convoId, onClose }) => {
 
       {/* Delete */}
       <button
-        onClick={() => { if (onClose) onClose(); }}
+        onClick={async () => {
+          await deleteConversationHook({ conversationId: convoId });
+          if (onClose) onClose();
+        }}
         className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 group/btn"
       >
         <Trash2 size={15} className="text-red-400 group-hover/btn:text-red-600 transition-colors" />

@@ -1,17 +1,43 @@
+import "dotenv/config";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { ChatGroq } from "@langchain/groq";
 import { AIMessage, HumanMessage, SystemMessage } from "langchain";
 import { FirstMessageResponse } from "../Prompts/conversation.prompt.js";
 
-const geminiModel = new ChatGoogleGenerativeAI({
-    model: "gemini-2.5-flash",
-    apiKey: process.env.GEMINI_API_KEY,
-});
+let geminiModel;
+let groqModel;
 
-const groqModel = new ChatGroq({
-    apiKey: process.env.GROQ_API_KEY,
-    model: "llama-3.1-8b-instant",
-});
+const getGroqModel = () => {
+    if (!process.env.GROQ_API_KEY) {
+        throw new Error("GROQ_API_KEY is missing");
+    }
+
+    if (!groqModel) {
+        groqModel = new ChatGroq({
+            apiKey: process.env.GROQ_API_KEY,
+            model: "llama-3.1-8b-instant",
+        });
+    }
+
+    return groqModel;
+};
+
+const getGeminiModel = () => {
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+
+    if (!apiKey) {
+        throw new Error("GEMINI_API_KEY or GOOGLE_API_KEY is missing");
+    }
+
+    if (!geminiModel) {
+        geminiModel = new ChatGoogleGenerativeAI({
+            model: "gemini-2.5-flash",
+            apiKey,
+        });
+    }
+
+    return geminiModel;
+};
 
 const asLangChainMessages = ({ messages }) => {
     return messages.map((msg) => {
@@ -74,9 +100,9 @@ export const generateChatTitle = ({ message }) => {
 
 export const generateMessageResponse = async ({ messages, res, mode = "casual" }) => {
     try {
-        return await streamModelResponse({ model: groqModel, messages, mode, res });
+        return await streamModelResponse({ model: getGroqModel(), messages, mode, res });
     } catch (groqError) {
         console.error("Groq stream failed, falling back to Gemini:", groqError?.message);
-        return await streamModelResponse({ model: geminiModel, messages, mode, res });
+        return await streamModelResponse({ model: getGeminiModel(), messages, mode, res });
     }
 };

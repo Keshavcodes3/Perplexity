@@ -1,18 +1,21 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import Sidebar from '../../Chat/Components/Sidebar.jsx';
 import { useSelector, useDispatch } from 'react-redux';
 import { useProject } from '../Hooks/useProject.jsx';
 import { FolderGit2, MessageSquare, ArrowLeft } from 'lucide-react';
 import { setActiveProjectId } from '../Redux/project.slice.js';
+import { setActiveConversationId } from '../../Chat/Redux/chat.slice.js';
+import { useNavigate } from 'react-router-dom';
 
 const Projects = () => {
   const { activeProject, projects } = useSelector((state) => state.project);
   const { getAllProjectsHook } = useProject();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   useEffect(() => {
     getAllProjectsHook();
-  }, []);
+  }, [getAllProjectsHook]);
 
   return (
     <div className="flex h-screen w-full bg-slate-50 font-sans text-slate-900 overflow-hidden">
@@ -49,18 +52,32 @@ const Projects = () => {
                </div>
             ) : (
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                 {activeProject.conversations.map((conv, idx) => (
-                   <div key={idx} className="group p-5 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-orange-200 transition-all cursor-pointer flex flex-col h-32">
+                 {activeProject.conversations.map((conv) => (
+                   <button
+                     key={conv._id}
+                     onClick={() => {
+                       dispatch(setActiveConversationId(conv._id));
+                       navigate("/chat");
+                     }}
+                     className="group flex h-32 cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition-all hover:border-orange-200 hover:shadow-md"
+                   >
                      <div className="flex items-start justify-between mb-auto">
                         <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-orange-50 transition-colors">
                           <MessageSquare className="w-5 h-5 text-slate-400 group-hover:text-orange-500 transition-colors" />
                         </div>
+                        <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                          {conv.mode || "casual"}
+                        </span>
                      </div>
                      <div>
-                        <h3 className="font-semibold text-slate-700 group-hover:text-slate-900 truncate">Chat Session</h3>
-                        <p className="text-xs text-slate-400 font-medium mt-1 uppercase tracking-wide truncate">ID: {conv}</p>
+                        <h3 className="truncate font-semibold text-slate-700 group-hover:text-slate-900">
+                          {conv.title || "New Chat"}
+                        </h3>
+                        <p className="mt-1 truncate text-xs font-medium uppercase tracking-wide text-slate-400">
+                          {conv.chatCount || 0} {(conv.chatCount === 1) ? "message" : "messages"}
+                        </p>
                      </div>
-                   </div>
+                   </button>
                  ))}
                </div>
             )}

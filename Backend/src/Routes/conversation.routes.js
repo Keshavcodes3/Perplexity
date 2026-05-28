@@ -5,6 +5,7 @@ import {
     deleteConversation,
     getAllConversations,
     getOneConversation,
+    getUsageAnalytics,
     takeFollowUp,
     updateConversationMode,
 } from "../Controllers/conversation.controller.js";
@@ -18,6 +19,7 @@ conversationRouter.post("/sendMessage/:conversationId", IdentifyUser, takeFollow
 conversationRouter.patch("/:conversationId/mode", IdentifyUser, updateConversationMode);
 conversationRouter.delete("/delete/:conversationId", IdentifyUser, deleteConversation);
 conversationRouter.get("/all", IdentifyUser, getAllConversations);
+conversationRouter.get("/analytics/usage", IdentifyUser, getUsageAnalytics);
 conversationRouter.get("/:conversationId", IdentifyUser, getOneConversation);
 
 export default conversationRouter;

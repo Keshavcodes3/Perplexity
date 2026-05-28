@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FolderGit2, Plus, Check, X, ChevronDown, ChevronRight } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -119,7 +119,7 @@ const ProjectsList = () => {
             ) : (
               (projects || []).filter(Boolean).map((item) => (
                 <button
-                  key={item._id || Math.random()}
+                  key={item._id || item.title}
                   onClick={() => {
                     dispatch(setActiveProjectId(item._id));
                     navigate("/projects");

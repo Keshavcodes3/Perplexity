@@ -1,13 +1,13 @@
 import axios from "axios";
+import { BASEURL } from "../../API/ApiStore";
 
 const API = axios.create({
-    baseURL: "http://localhost:3000/api/project",
+    baseURL: `${BASEURL}/api/project`,
     withCredentials: true,
 });
 
-// Backend expects { projectName } for creation
 export const createProject = async ({ title }) => {
-    const { data } = await API.post("/", { projectName: title });
+    const { data } = await API.post("/", { title });
     return data;
 };
 

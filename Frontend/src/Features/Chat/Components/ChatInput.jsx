@@ -1,65 +1,86 @@
-import React, { useState } from 'react';
-import { Paperclip, Mic, SendHorizontal } from 'lucide-react';
-import { useSelector } from 'react-redux';
-import { useChat } from '../Hooks/useChat';
-import { setLoading } from '../Redux/chat.slice';
-const ChatInput = ({ mode }) => {
-  const [query, setQuery] = useState('');
-  const { loading } = useSelector((state) => state.chat)
-  const { activeConversationId } = useSelector((state) => state.chat)
-  const { takeFollowUpHook, startChatHook } = useChat()
+import { useMemo, useState } from "react";
+import { Mic, Paperclip, SendHorizontal } from "lucide-react";
+import { useSelector } from "react-redux";
+import { useChat } from "../Hooks/useChat";
+
+const ChatInput = () => {
+  const [query, setQuery] = useState("");
+  const { activeConversationId, conversations, loading } = useSelector(
+    (state) => state.chat
+  );
+  const { takeFollowUpHook, startChatHook } = useChat();
+
+  const activeMode = useMemo(() => {
+    return (
+      conversations.find((conversation) => conversation.convoId === activeConversationId)
+        ?.mode || "casual"
+    );
+  }, [activeConversationId, conversations]);
+
   const sendMessage = async () => {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery || loading) return;
+
+    setQuery("");
+
     if (!activeConversationId) {
-      const data = await startChatHook({
-        message: query,
-        mode: mode
-      })
-    } else {
-      const data = await takeFollowUpHook({
-        conversationId: activeConversationId,
-        message: query,
-        mode: mode
-      })
+      await startChatHook({
+        message: trimmedQuery,
+        mode: activeMode,
+      });
+      return;
     }
-    setQuery("")
-   }
+
+    await takeFollowUpHook({
+      conversationId: activeConversationId,
+      message: trimmedQuery,
+    });
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  const canSend = query.trim() && !loading;
+
   return (
-    <div className="max-w-3xl mx-auto w-full px-4 pb-6">
-      <div className="relative flex items-end gap-2 bg-white rounded-2xl border border-slate-200 shadow-sm focus-within:border-orange-300 focus-within:ring-4 focus-within:ring-orange-100 transition-all p-2">
-        
-        {/* Attach Button */}
-        <button className="p-2 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition-colors shrink-0">
-          <Paperclip className="w-5 h-5" />
+    <div className="mx-auto w-full max-w-3xl px-4 pb-6">
+      <div className="relative flex items-end gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm transition-all focus-within:border-orange-300 focus-within:ring-4 focus-within:ring-orange-100">
+        <button className="shrink-0 rounded-xl p-2 text-slate-400 transition-colors hover:bg-orange-50 hover:text-orange-500">
+          <Paperclip className="h-5 w-5" />
         </button>
 
-        {/* Textarea */}
         <textarea
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="Ask NexaAI anything..."
-          className="w-full max-h-32 min-h-[44px] bg-transparent resize-none outline-none py-2.5 text-slate-900 placeholder:text-slate-400 text-[15px]"
+          className="max-h-32 min-h-[44px] w-full resize-none bg-transparent py-2.5 text-[15px] text-slate-900 outline-none placeholder:text-slate-400"
           rows={1}
+          disabled={loading}
         />
 
-        {/* Mic & Send Buttons */}
-        <div className="flex items-center gap-1 shrink-0">
-          <button className="p-2 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition-colors">
-            <Mic className="w-5 h-5" />
+        <div className="flex shrink-0 items-center gap-1">
+          <button className="rounded-xl p-2 text-slate-400 transition-colors hover:bg-orange-50 hover:text-orange-500">
+            <Mic className="h-5 w-5" />
           </button>
-          <button 
-            onClick={()=>sendMessage()}
-            className={`p-2 rounded-xl transition-all ${
-              query.trim() 
-                ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-sm' 
-                : 'bg-slate-100 text-slate-400'
+          <button
+            onClick={sendMessage}
+            disabled={!canSend}
+            className={`rounded-xl p-2 transition-all ${
+              canSend
+                ? "bg-orange-500 text-white shadow-sm hover:bg-orange-600"
+                : "cursor-not-allowed bg-slate-100 text-slate-400"
             }`}
           >
-            <SendHorizontal className="w-5 h-5" />
+            <SendHorizontal className="h-5 w-5" />
           </button>
         </div>
-
       </div>
-      <p className="text-center text-xs text-slate-400 mt-3">
+      <p className="mt-3 text-center text-xs text-slate-400">
         NexaAI can make mistakes. Consider verifying important information.
       </p>
     </div>

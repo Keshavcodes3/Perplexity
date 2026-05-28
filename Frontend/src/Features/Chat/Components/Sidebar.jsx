@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Sparkles, Plus, BarChart2, LogOut, FolderGit2 } from 'lucide-react';
 import ChatHistory from './ChatHistory.jsx';
 import { useSelector, useDispatch } from "react-redux";
@@ -15,11 +15,9 @@ const Sidebar = () => {
 
   useEffect(() => {
     getAllProjectsHook();
-  }, []);
+  }, [getAllProjectsHook]);
 
-  // Dynamic user from auth state — not hardcoded
   const { user } = useSelector((state) => state.auth);
-  console.log(user)
   const userName = user?.username || user?.name || user?.email?.split('@')[0] || 'User';
   const userPlan = user?.plan || 'Free Plan';
 

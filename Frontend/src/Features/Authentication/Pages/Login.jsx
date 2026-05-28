@@ -17,7 +17,7 @@ const validateLogin = ({ email, password }) => {
     return errors;
 };
 
-const Login = ({ onSuccess, onNavigateToRegister }) => {
+const Login = ({ onSuccess }) => {
     const { handleLogin, loading, error, message, clearError } = useAuth();
     const { values, errors, status, setErrors, setStatus, handleChange } = useAuthForm({
         email: "",

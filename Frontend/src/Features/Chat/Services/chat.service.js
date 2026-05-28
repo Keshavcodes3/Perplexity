@@ -6,6 +6,84 @@ const API = axios.create({
     withCredentials: true,
 });
 
+const readJsonError = async (response, fallback) => {
+    try {
+        const data = await response.json();
+        return data.message || fallback;
+    } catch {
+        return fallback;
+    }
+};
+
+const consumeNdjsonStream = async (response, handlers = {}) => {
+    if (!response.body) {
+        throw new Error("Streaming is not supported by this browser");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
+    let doneSeen = false;
+
+    const handleLine = (line) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+
+        const data = JSON.parse(trimmed);
+
+        if (data.type === "start") {
+            handlers.onStart?.(data);
+            return;
+        }
+
+        if (data.type === "chunk") {
+            handlers.onChunk?.(data.text || "");
+            return;
+        }
+
+        if (data.type === "done") {
+            doneSeen = true;
+            handlers.onDone?.(data);
+            return;
+        }
+
+        if (data.type === "error") {
+            throw new Error(data.error || "Stream error");
+        }
+    };
+
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+                handleLine(line);
+            }
+        }
+
+        buffer += decoder.decode();
+
+        if (buffer.trim()) {
+            const lines = buffer.split("\n");
+            for (const line of lines) {
+                handleLine(line);
+            }
+        }
+
+        if (!doneSeen) {
+            throw new Error("Stream ended before completion");
+        }
+    } finally {
+        reader.releaseLock();
+    }
+};
+
 export const streamStartChat = async (
     { message, mode = "casual" },
     onStart,
@@ -14,308 +92,87 @@ export const streamStartChat = async (
     onError
 ) => {
     try {
+        const response = await fetch(`${BASEURL}/api/conversations/`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({ message, mode }),
+        });
+
+        if (!response.ok) {
+            throw new Error(await readJsonError(response, "Error starting chat"));
+        }
+
+        await consumeNdjsonStream(response, {
+            onStart,
+            onChunk,
+            onDone,
+        });
+    } catch (err) {
+        onError?.(err.message);
+    }
+};
+
+export const streamTakeFollowUp = async (
+    { conversationId, message },
+    onChunk,
+    onDone,
+    onError
+) => {
+    try {
         const response = await fetch(
-            `${BASEURL}/api/conversations/`,
+            `${BASEURL}/api/conversations/sendMessage/${conversationId}`,
             {
                 method: "POST",
                 headers: {
-                    "Content-Type":
-                        "application/json",
+                    "Content-Type": "application/json",
                 },
                 credentials: "include",
-
-                // FIX → send mode
-                body: JSON.stringify({
-                    message,
-                    mode,
-                }),
+                body: JSON.stringify({ message }),
             }
         );
 
         if (!response.ok) {
-            const err =
-                await response.json();
-
-            throw new Error(
-                err.message ||
-                "Error starting chat"
-            );
+            throw new Error(await readJsonError(response, "Error sending message"));
         }
 
-        const reader =
-            response.body.getReader();
-
-        const decoder =
-            new TextDecoder("utf-8");
-
-        let buffer = "";
-
-        while (true) {
-            const { done, value } =
-                await reader.read();
-
-            if (done) break;
-
-            buffer += decoder.decode(
-                value,
-                { stream: true }
-            );
-
-            const lines =
-                buffer.split("\n");
-
-            buffer = lines.pop();
-
-            for (const line of lines) {
-                if (!line.trim())
-                    continue;
-
-                try {
-                    const data =
-                        JSON.parse(line);
-
-                    if (
-                        data.type === "start"
-                    ) {
-                        onStart?.(data);
-                    }
-
-                    else if (
-                        data.type === "chunk"
-                    ) {
-                        onChunk?.(
-                            data.text
-                        );
-                    }
-
-                    else if (
-                        data.type === "done"
-                    ) {
-                        onDone?.(data);
-                    }
-
-                    else if (
-                        data.type === "error"
-                    ) {
-                        throw new Error(
-                            data.error ||
-                            "Stream error"
-                        );
-                    }
-                } catch (e) {
-                    console.error(
-                        "Parse error:",
-                        line,
-                        e
-                    );
-
-                    onError?.(
-                        e.message
-                    );
-                }
-            }
-        }
-
-        // FIX → last buffered line
-        if (buffer.trim()) {
-            const data =
-                JSON.parse(buffer);
-
-            if (
-                data.type === "done"
-            ) {
-                onDone?.(data);
-            }
-        }
+        await consumeNdjsonStream(response, {
+            onChunk,
+            onDone,
+        });
     } catch (err) {
-        onError?.(
-            err.message
-        );
+        onError?.(err.message);
     }
 };
 
-export const streamTakeFollowUp =
-    async (
-        {
-            conversationId,
-            message,
-            mode = "casual",
-        },
-        onChunk,
-        onDone,
-        onError
-    ) => {
-        try {
-            const response =
-                await fetch(
-                    `${BASEURL}/api/conversations/sendMessage/${conversationId}`,
-                    {
-                        method: "POST",
-                        headers: {
-                            "Content-Type":
-                                "application/json",
-                        },
-                        credentials:
-                            "include",
-
-                        // FIX → send mode
-                        body: JSON.stringify({
-                            message,
-                            mode,
-                        }),
-                    }
-                );
-
-            if (!response.ok) {
-                const err =
-                    await response.json();
-
-                throw new Error(
-                    err.message ||
-                    "Error sending message"
-                );
-            }
-
-            const reader =
-                response.body.getReader();
-
-            const decoder =
-                new TextDecoder("utf-8");
-
-            let buffer = "";
-
-            while (true) {
-                const {
-                    done,
-                    value,
-                } =
-                    await reader.read();
-
-                if (done) break;
-
-                buffer +=
-                    decoder.decode(
-                        value,
-                        {
-                            stream: true,
-                        }
-                    );
-
-                const lines =
-                    buffer.split("\n");
-
-                buffer =
-                    lines.pop();
-
-                for (const line of lines) {
-                    if (!line.trim())
-                        continue;
-
-                    try {
-                        const data =
-                            JSON.parse(
-                                line
-                            );
-
-                        if (
-                            data.type ===
-                            "chunk"
-                        ) {
-                            onChunk?.(
-                                data.text
-                            );
-                        }
-
-                        else if (
-                            data.type ===
-                            "done"
-                        ) {
-                            onDone?.(
-                                data
-                            );
-                        }
-
-                        else if (
-                            data.type ===
-                            "error"
-                        ) {
-                            throw new Error(
-                                data.error ||
-                                "Stream error"
-                            );
-                        }
-                    } catch (e) {
-                        console.error(
-                            "Parse error:",
-                            line,
-                            e
-                        );
-
-                        onError?.(
-                            e.message
-                        );
-                    }
-                }
-            }
-
-            if (buffer.trim()) {
-                const data =
-                    JSON.parse(buffer);
-
-                if (
-                    data.type ===
-                    "done"
-                ) {
-                    onDone?.(
-                        data
-                    );
-                }
-            }
-        } catch (err) {
-            onError?.(
-                err.message
-            );
-        }
-    };
-
-export const deleteConversation =
-    async (
-        conversationId
-    ) => {
-        const response =
-            await API.delete(
-                `/delete/${conversationId}`
-            );
-
-        return response.data;
-    };
-
-export const getAllConversations =
-    async () => {
-        const response =
-            await API.get("/all");
-
-        return response.data;
-    };
-
-export const getAllMessages =
-    async ({
-        conversationId,
-    }) => {
-        const response =
-            await API.get(
-                `/${conversationId}`
-            );
-
-        return response.data;
-    };
-
 export const createEmptyConversationApi = async ({ mode }) => {
-    const response = await API.post('/new', { mode });
+    const response = await API.post("/empty", { mode });
     return response.data;
 };
 
 export const updateConversationModeApi = async ({ conversationId, mode }) => {
     const response = await API.patch(`/${conversationId}/mode`, { mode });
+    return response.data;
+};
+
+export const deleteConversation = async (conversationId) => {
+    const response = await API.delete(`/delete/${conversationId}`);
+    return response.data;
+};
+
+export const getAllConversations = async () => {
+    const response = await API.get("/all");
+    return response.data;
+};
+
+export const getAllMessages = async ({ conversationId }) => {
+    const response = await API.get(`/${conversationId}`);
+    return response.data;
+};
+
+export const getUsageAnalytics = async () => {
+    const response = await API.get("/analytics/usage");
     return response.data;
 };

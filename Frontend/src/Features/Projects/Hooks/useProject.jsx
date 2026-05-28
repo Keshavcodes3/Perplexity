@@ -1,9 +1,10 @@
 import {
   setLoading,
   setError,
-  setActiveProjectId,
+  setActiveProject,
   setAllProjects,
   addProject,
+  replaceProject,
   addConversationToProject,
   renameProject,
   deleteProject,
@@ -18,6 +19,7 @@ import {
   renameProject as renameProjectApi,
 } from "../Services/project.service";
 
+import { useCallback } from "react";
 import { useDispatch } from "react-redux";
 
 export const useProject = () => {
@@ -25,7 +27,7 @@ export const useProject = () => {
 
   /* ---------------- CREATE ---------------- */
 
-  const createProjectHook = async ({
+  const createProjectHook = useCallback(async ({
     title,
   }) => {
     try {
@@ -56,12 +58,12 @@ export const useProject = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [dispatch]);
 
   /* ---------------- GET ALL ---------------- */
 
   const getAllProjectsHook =
-    async () => {
+    useCallback(async () => {
       try {
         dispatch(setLoading(true));
         dispatch(setError(null));
@@ -96,12 +98,12 @@ export const useProject = () => {
           setLoading(false)
         );
       }
-    };
+    }, [dispatch]);
 
   /* ---------------- GET ONE ---------------- */
 
   const getOneProjectHook =
-    async ({ projectId }) => {
+    useCallback(async ({ projectId }) => {
       try {
         dispatch(setLoading(true));
         dispatch(setError(null));
@@ -120,11 +122,7 @@ export const useProject = () => {
           return;
         }
 
-        dispatch(
-          setActiveProjectId(
-            projectId
-          )
-        );
+        dispatch(setActiveProject(data.data));
 
         return data;
       } catch (err) {
@@ -138,12 +136,12 @@ export const useProject = () => {
           setLoading(false)
         );
       }
-    };
+    }, [dispatch]);
 
   /* ---------------- ADD CHAT ---------------- */
 
   const addConversationToProjectHook =
-    async ({
+    useCallback(async ({
       projectId,
       conversationId,
     }) => {
@@ -172,10 +170,14 @@ export const useProject = () => {
           addConversationToProject(
             {
               projectId,
-              conversationId,
+              conversation: data.data.conversation,
             }
           )
         );
+
+        if (data.data.project) {
+          dispatch(replaceProject(data.data.project));
+        }
 
         return data;
       } catch (err) {
@@ -189,12 +191,12 @@ export const useProject = () => {
           setLoading(false)
         );
       }
-    };
+    }, [dispatch]);
 
   /* ---------------- RENAME ---------------- */
 
   const renameProjectHook =
-    async ({
+    useCallback(async ({
       projectId,
       title,
     }) => {
@@ -219,12 +221,11 @@ export const useProject = () => {
           return;
         }
 
-        dispatch(
-          renameProject({
-            projectId,
-            title,
-          })
-        );
+        if (data.data?._id) {
+          dispatch(replaceProject(data.data));
+        } else {
+          dispatch(renameProject({ projectId, title }));
+        }
 
         return data;
       } catch (err) {
@@ -238,12 +239,12 @@ export const useProject = () => {
           setLoading(false)
         );
       }
-    };
+    }, [dispatch]);
 
   /* ---------------- DELETE ---------------- */
 
   const deleteProjectHook =
-    async ({
+    useCallback(async ({
       projectId,
     }) => {
       try {
@@ -284,7 +285,7 @@ export const useProject = () => {
           setLoading(false)
         );
       }
-    };
+    }, [dispatch]);
 
   return {
     createProjectHook,

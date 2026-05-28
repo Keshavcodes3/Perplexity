@@ -39,7 +39,7 @@ const validateStep2 = ({ email, password }) => {
     return errors;
 };
 
-const Register = ({ onSuccess, onNavigateToLogin }) => {
+const Register = ({ onSuccess }) => {
     const { handleRegister, loading, error, message, clearError } = useAuth();
     const [step, setStep] = useState(1);
 

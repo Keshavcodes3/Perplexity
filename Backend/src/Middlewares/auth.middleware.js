@@ -10,12 +10,12 @@ export const IdentifyUser = async (req, res, next) => {
     }
     let decoded;
     try {
-        decoded = await jwt.verify(token, process.env.JWT_SECRET)
+        decoded = jwt.verify(token, process.env.JWT_SECRET)
         req.user = decoded
         next()
     } catch (err) {
-        return res.status(400).json({
-            message: "Internal Server error",
+        return res.status(401).json({
+            message: "Unauthorized access",
             success: false,
             error: err.message
         })

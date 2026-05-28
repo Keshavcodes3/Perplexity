@@ -1,4 +1,3 @@
-import React from 'react';
 import { Sparkles, Code2, FileText } from 'lucide-react';
 
 const suggestions = [

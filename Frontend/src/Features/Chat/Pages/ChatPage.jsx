@@ -1,12 +1,14 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import Sidebar from '../Components/Sidebar.jsx';
 import ChatWindow from '../Components/ChatWindow.jsx';
 import { useChat } from '../Hooks/useChat.jsx';
 const ChatPage = () => {
-  const {fetchChatHistory}=useChat()
-  useEffect(()=>{
-    fetchChatHistory()
-  },[])
+  const { fetchChatHistory } = useChat();
+
+  useEffect(() => {
+    fetchChatHistory();
+  }, [fetchChatHistory]);
+
   return (
     <div className="flex h-screen w-full bg-slate-50 font-sans text-slate-900 overflow-hidden">
       <Sidebar />
