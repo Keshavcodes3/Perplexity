@@ -3,7 +3,7 @@ import { Paperclip, Mic, SendHorizontal } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { useChat } from '../Hooks/useChat';
 import { setLoading } from '../Redux/chat.slice';
-const ChatInput = () => {
+const ChatInput = ({ mode }) => {
   const [query, setQuery] = useState('');
   const { loading } = useSelector((state) => state.chat)
   const { activeConversationId } = useSelector((state) => state.chat)
@@ -11,12 +11,14 @@ const ChatInput = () => {
   const sendMessage = async () => {
     if (!activeConversationId) {
       const data = await startChatHook({
-        message: query
+        message: query,
+        mode: mode
       })
     } else {
       const data = await takeFollowUpHook({
         conversationId: activeConversationId,
-        message: query
+        message: query,
+        mode: mode
       })
     }
     setQuery("")

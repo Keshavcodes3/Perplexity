@@ -12,14 +12,16 @@ const conversationSchema = new mongoose.Schema({
     },
     projectId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "s"
+        ref: "Project"
     },
     mode: {
         type: String,
         default: "casual",
-        enum: ['casual', 'explain', 'roadmap']
+        enum: ["casual", "explanation", "roadmap"]
     }
-}, { timeStamps: true })
+}, { timestamps: true })
+
+conversationSchema.index({ user: 1, createdAt: -1 });
 
 
 

@@ -1,312 +1,380 @@
-import UserModel from "../Models/user.model.js";
+import mongoose from "mongoose";
 import ConversationModel from "../Models/conversation.model.js";
 import chatModel from "../Models/chat.model.js";
 import { generateChatTitle, generateMessageResponse } from "../Services/ai.services.js";
 
+const VALID_MODES = new Set(["casual", "explanation", "roadmap"]);
 
-export const createFirstConversation = async (req, res) => {
+const normalizeMode = (mode = "casual") => {
+    const normalized = String(mode).trim().toLowerCase();
+
+    if (normalized === "ask anything") return "casual";
+    if (normalized === "explain") return "explanation";
+    if (VALID_MODES.has(normalized)) return normalized;
+
+    return "casual";
+};
+
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
+const sendStreamError = (res, err) => {
+    const message = err?.message || "Something went wrong";
+
+    if (!res.headersSent) {
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+            error: process.env.MODE === "dev" ? message : "Something went wrong",
+        });
+    }
+
+    res.write(JSON.stringify({ type: "error", error: message }) + "\n");
+    return res.end();
+};
+
+const setStreamHeaders = (res) => {
+    res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+};
+
+export const createEmptyConversation = async (req, res) => {
     try {
-        const userId = req.user.id
-        const user = await UserModel.findById(userId)
-        if (!user) {
-            return res.status(404).json({
-                message: "No user found",
-                success: false
-            })
-        }
-        const { message } = req.body
-        let { mode } = req.body
-        if (!mode) {
-            mode = "casual"
-        }
-        if (!message || message == null) {
-            return res.status(400).json({
-                message: "Message should be greater than one char",
-                success: false
-            })
-        }
-
-        res.setHeader("Content-Type", "application/x-ndjson");
-        res.setHeader("Cache-Control", "no-cache");
-        res.setHeader("Connection", "keep-alive");
-        res.flushHeaders();
-
-        const title = await generateChatTitle({ message })
+        const userId = req.user.id;
+        const mode = normalizeMode(req.body.mode);
 
         const conversation = await ConversationModel.create({
             user: userId,
-            title: title
-        })
+            title: "New Chat",
+            mode,
+        });
+
+        return res.status(201).json({
+            message: "Conversation created",
+            conversationId: conversation._id,
+            conversation,
+            success: true,
+        });
+    } catch (err) {
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+            error: process.env.MODE === "dev" ? err.message : "Something went wrong",
+        });
+    }
+};
+
+export const createFirstConversation = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const message = String(req.body.message || "").trim();
+        const mode = normalizeMode(req.body.mode);
+
+        if (!message) {
+            return res.status(400).json({
+                message: "Message should be greater than one char",
+                success: false,
+            });
+        }
+
+        const title = generateChatTitle({ message });
+
+        const conversation = await ConversationModel.create({
+            user: userId,
+            title,
+            mode,
+        });
+
         const userMessage = await chatModel.create({
             conversationId: conversation._id,
             role: "user",
             content: message,
         });
 
-        res.write(JSON.stringify({ type: 'start', title, conversationId: conversation._id }) + '\n');
+        setStreamHeaders(res);
+
+        res.write(JSON.stringify({
+            type: "start",
+            title,
+            mode,
+            conversationId: conversation._id,
+        }) + "\n");
 
         const result = await generateMessageResponse({
             messages: [{ role: "user", content: message }],
-            res
+            res,
+            mode,
         });
 
         const AIMessage = await chatModel.create({
             conversationId: conversation._id,
             role: "ai",
-            content: result
-        })
+            content: result,
+        });
 
         res.write(JSON.stringify({
-            type: 'done',
+            type: "done",
             message: "New conversation created",
-            title: title,
+            title,
+            mode,
             conversationId: conversation._id,
-            conversation: conversation,
+            conversation,
             content: {
-                AIMessage: AIMessage,
-                userMessage: userMessage
+                AIMessage,
+                userMessage,
             },
-            success: true
-        }) + '\n');
+            success: true,
+        }) + "\n");
+
         return res.end();
     } catch (err) {
-        if (!res.headersSent) {
-            return res.status(500).json({
-                message: "Internal server Error",
-                success: false,
-                error: process.env.MODE == "dev" ? err?.message : "Something went wrong"
-            });
-        } else {
-            res.write(JSON.stringify({ type: 'error', error: err?.message || "Something went wrong" }) + '\n');
-            return res.end();
-        }
+        return sendStreamError(res, err);
     }
-}
-
+};
 
 export const takeFollowUp = async (req, res) => {
     try {
+        const userId = req.user.id;
+        const { conversationId } = req.params;
+        const message = String(req.body.message || "").trim();
 
-        const userId = req.user.id
-        const user = await UserModel.findById(userId)
-        if (!user) {
-            return res.status(404).json({
-                message: "No user found",
-                success: false
-            })
-        }
-        res.setHeader("Content-Type", "application/x-ndjson");
-        res.setHeader("Cache-Control", "no-cache");
-        res.setHeader("Connection", "keep-alive");
-        res.flushHeaders();
-
-        const { conversationId } = req.params
-        if (!conversationId || conversationId == null) {
+        if (!conversationId || !isValidObjectId(conversationId)) {
             return res.status(400).json({
                 message: "No conversation found",
-                success: false
-            })
+                success: false,
+            });
         }
-        const conversation = await ConversationModel.findById(conversationId)
-        if (!conversation) {
-            return res.status(400).json({
-                message: "No conversation found",
-                success: false
-            })
-        }
-        const { message } = req.body
+
         if (!message) {
             return res.status(400).json({
                 message: "No message provided",
-                success: false
-            })
-        }
-        const userMessage = await chatModel.create({
-            conversationId: conversationId,
-            role: "user",
-            content: message
-        })
-        const allMessages = await chatModel.find({
-            conversationId: conversationId
-        })
-        if (!allMessages || allMessages.length == 0) {
-            return res.status(400).json({
-                message: "No conversation found , try to create one",
-                success: false
-            })
+                success: false,
+            });
         }
 
-        const result = await generateMessageResponse({ messages: allMessages, res })
-        const AiMessage = await chatModel.create({
-            conversationId: conversationId,
+        const conversation = await ConversationModel.findOne({
+            _id: conversationId,
+            user: userId,
+        });
+
+        if (!conversation) {
+            return res.status(404).json({
+                message: "No conversation found",
+                success: false,
+            });
+        }
+
+        const existingMessageCount = await chatModel.countDocuments({ conversationId });
+        const title = existingMessageCount === 0 ? generateChatTitle({ message }) : conversation.title;
+
+        if (existingMessageCount === 0 && conversation.title !== title) {
+            conversation.title = title;
+            await conversation.save();
+        }
+
+        const userMessage = await chatModel.create({
+            conversationId,
+            role: "user",
+            content: message,
+        });
+
+        const allMessages = await chatModel
+            .find({ conversationId })
+            .sort({ createdAt: 1 })
+            .select("role content")
+            .lean();
+
+        setStreamHeaders(res);
+
+        const mode = normalizeMode(conversation.mode);
+        const result = await generateMessageResponse({
+            messages: allMessages,
+            res,
+            mode,
+        });
+
+        const AIMessage = await chatModel.create({
+            conversationId,
             role: "ai",
-            content: result
-        })
+            content: result,
+        });
 
         res.write(JSON.stringify({
-            type: 'done',
+            type: "done",
             message: "Message created",
-            title: conversation.title,
-            conversation: conversation,
+            title,
+            mode,
+            conversationId,
+            conversation,
             content: {
-                AIMessage: AiMessage,
-                userMessage: userMessage
+                AIMessage,
+                userMessage,
             },
-            success: true
-        }) + '\n');
+            success: true,
+        }) + "\n");
+
         return res.end();
     } catch (err) {
-        if (!res.headersSent) {
-            return res.status(500).json({
-                message: "Internal server Error",
-                success: false,
-                error: process.env.MODE == "dev" ? err?.message : "Something went wrong"
-            });
-        } else {
-            res.write(JSON.stringify({ type: 'error', error: err?.message || "Something went wrong" }) + '\n');
-            return res.end();
-        }
+        return sendStreamError(res, err);
     }
-}
+};
 
+export const updateConversationMode = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { conversationId } = req.params;
+        const mode = normalizeMode(req.body.mode);
+
+        if (!conversationId || !isValidObjectId(conversationId)) {
+            return res.status(400).json({
+                message: "No conversation found",
+                success: false,
+            });
+        }
+
+        const conversation = await ConversationModel.findOneAndUpdate(
+            { _id: conversationId, user: userId },
+            { mode },
+            { new: true }
+        );
+
+        if (!conversation) {
+            return res.status(404).json({
+                message: "No conversation found",
+                success: false,
+            });
+        }
+
+        return res.status(200).json({
+            message: "Conversation mode updated",
+            conversationId: conversation._id,
+            mode: conversation.mode,
+            conversation,
+            success: true,
+        });
+    } catch (err) {
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+            error: process.env.MODE === "dev" ? err.message : "Something went wrong",
+        });
+    }
+};
 
 export const deleteConversation = async (req, res) => {
     try {
-        const userId = req.user.id
-        const user = await UserModel.findById(userId)
-        if (!user) {
-            return res.status(404).json({
-                message: "No user found",
-                success: false
-            })
-        }
-        const { conversationId } = req.params
-        if (!conversationId || conversationId == null) {
+        const userId = req.user.id;
+        const { conversationId } = req.params;
+
+        if (!conversationId || !isValidObjectId(conversationId)) {
             return res.status(400).json({
                 message: "No conversation found",
-                success: false
-            })
+                success: false,
+            });
         }
-        const conversation = await ConversationModel.findById(conversationId)
-        if (!conversation) {
-            return res.status(400).json({
-                message: "No conversation found",
-                success: false
-            })
-        }
-        await ConversationModel.findByIdAndDelete(conversationId)
-        await chatModel.deleteMany({
-            conversationId: conversationId
+
+        const conversation = await ConversationModel.findOneAndDelete({
+            _id: conversationId,
+            user: userId,
         });
+
+        if (!conversation) {
+            return res.status(404).json({
+                message: "No conversation found",
+                success: false,
+            });
+        }
+
+        await chatModel.deleteMany({ conversationId });
+
         return res.status(200).json({
             message: "Conversation deleted successfully",
-            success: true
-        })
+            success: true,
+        });
     } catch (err) {
         return res.status(500).json({
             message: "Internal Server Error",
             success: false,
-            error: process.env.MODE == "dev" ? err.message : "Something went wrong"
-        })
+            error: process.env.MODE === "dev" ? err.message : "Something went wrong",
+        });
     }
-}
+};
 
 export const getAllConversations = async (req, res) => {
     try {
-        const userId = req.user.id
-        const user = await UserModel.findById(userId)
-        if (!user) {
-            return res.status(404).json({
-                message: "No user found",
-                success: false
-            })
-        }
-        const conversations = await ConversationModel.find({
-            user: userId
-        }).sort({ createdAt: -1 })
+        const userId = req.user.id;
+        const conversations = await ConversationModel.find({ user: userId })
+            .sort({ updatedAt: -1, createdAt: -1 })
+            .select("title mode createdAt updatedAt")
+            .lean();
 
-        const allConversations = []
-        conversations.forEach((convo) => {
-            const data = {
-                convoId: convo._id,
-                convo: convo.title
-            }
-            allConversations.push(data)
-        })
+        const allConversations = conversations.map((convo) => ({
+            convoId: convo._id,
+            convo: convo.title,
+            mode: normalizeMode(convo.mode),
+            createdAt: convo.createdAt,
+            updatedAt: convo.updatedAt,
+        }));
+
         return res.status(200).json({
             message: "All conversations fetched successfully",
-            allConversations: allConversations,
-            success: true
-        })
+            allConversations,
+            success: true,
+        });
     } catch (err) {
         return res.status(500).json({
             message: "Internal Server Error",
             success: false,
-            error: process.env.MODE == "dev" ? err.message : "Something went wrong"
-        })
+            error: process.env.MODE === "dev" ? err.message : "Something went wrong",
+        });
     }
-}
-
+};
 
 export const getOneConversation = async (req, res) => {
     try {
         const userId = req.user.id;
-
-        const user = await UserModel.findById(userId);
-        if (!user) {
-            return res.status(404).json({
-                message: "No user found",
-                success: false
-            });
-        }
-
         const { conversationId } = req.params;
 
-        if (!conversationId) {
+        if (!conversationId || !isValidObjectId(conversationId)) {
             return res.status(400).json({
                 message: "No conversation found",
-                success: false
+                success: false,
             });
         }
 
-        const conversation = await ConversationModel.findById(conversationId);
+        const conversation = await ConversationModel.findOne({
+            _id: conversationId,
+            user: userId,
+        }).lean();
 
         if (!conversation) {
             return res.status(404).json({
                 message: "No conversation found",
-                success: false
-            });
-        }
-
-        // security check
-        if (conversation.user.toString() !== userId) {
-            return res.status(403).json({
-                message: "Unauthorized access",
-                success: false
+                success: false,
             });
         }
 
         const messages = await chatModel
-            .find({ conversationId: conversationId })
-            .sort({ createdAt: 1 });
+            .find({ conversationId })
+            .sort({ createdAt: 1 })
+            .select("role content createdAt")
+            .lean();
 
         return res.status(200).json({
             message: "Conversation fetched successfully",
             title: conversation.title,
+            mode: normalizeMode(conversation.mode),
             conversationId: conversation._id,
             conversation,
             chats: messages,
-            success: true
+            success: true,
         });
-
     } catch (err) {
         return res.status(500).json({
             message: "Internal Server Error",
             success: false,
-            error:
-                process.env.MODE == "dev"
-                    ? err.message
-                    : "Something went wrong"
+            error: process.env.MODE === "dev" ? err.message : "Something went wrong",
         });
     }
 };

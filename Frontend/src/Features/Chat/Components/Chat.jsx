@@ -13,7 +13,7 @@ export default function Chat() {
 
   // Only fetch from backend if we don't already have messages (e.g. loading from history)
   useEffect(() => {
-    if (activeConversationId && !messages[activeConversationId]?.length) {
+    if (activeConversationId && messages[activeConversationId] === undefined) {
       getAllChats({ conversationId: activeConversationId });
     }
   }, [activeConversationId]);

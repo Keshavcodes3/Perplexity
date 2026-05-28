@@ -1,65 +1,94 @@
-import { createSlice } from "@reduxjs/toolkit"
-
+import { createSlice } from "@reduxjs/toolkit";
 
 const chatSlice = createSlice({
     name: "chat",
+
     initialState: {
         activeConversationId: null,
         conversations: [],
         messages: {},
         loading: false,
-        streaming: false,
-        error: null
+        error: null,
     },
+
     reducers: {
         setActiveConversationId: (state, action) => {
-            state.activeConversationId = action.payload
-        },
-        addConversations: (state, action) => {
-            const {convoId,convo}=action.payload
-            const data={
-                convoId:convoId,
-                convo:convo
-            }
-            state.conversations.unshift(data)
+            state.activeConversationId = action.payload;
         },
 
-        //Add messages to conversations
-        addMessages: (state, action) => {
-            const { chatId, message,role } = action.payload
-            if (!state.messages[chatId]) {
-                state.messages[chatId] = []
-            } 
-            const data={
-                message:message,
-                role:role
+        addConversations: (state, action) => {
+            const { convoId, convo, mode = "casual" } = action.payload;
+
+            const exists = state.conversations.find(
+                (c) => c.convoId === convoId
+            );
+
+            if (!exists) {
+                state.conversations.unshift({
+                    convoId,
+                    convo,
+                    mode,
+                });
             }
-            state.messages[chatId].push(data)
         },
-        appendMessageChunk: (state, action) => {
-            const { chatId, chunk, role } = action.payload;
+
+        setConversations: (state, action) => {
+            state.conversations = action.payload;
+        },
+
+        addMessages: (state, action) => {
+            const { chatId, message, role } = action.payload;
+
             if (!state.messages[chatId]) {
                 state.messages[chatId] = [];
             }
+
+            state.messages[chatId].push({
+                message,
+                role,
+            });
+        },
+
+        setConversationMessages: (state, action) => {
+            const { chatId, messages } = action.payload;
+            state.messages[chatId] = messages;
+        },
+
+        appendMessageChunk: (state, action) => {
+            const { chatId, chunk, role } = action.payload;
+
+            if (!state.messages[chatId]) {
+                state.messages[chatId] = [];
+            }
+
             const messages = state.messages[chatId];
-            if (messages.length > 0 && messages[messages.length - 1].role === role) {
-                if (!messages[messages.length - 1].message) messages[messages.length - 1].message = { content: "" };
+
+            if (
+                messages.length &&
+                messages[messages.length - 1].role === role
+            ) {
                 messages[messages.length - 1].message.content += chunk;
             } else {
-                messages.push({ message: { content: chunk }, role: role });
+                messages.push({
+                    message: { content: chunk },
+                    role,
+                });
             }
         },
-        setError: (state, action) => {
-            state.error = action.payload
-        },
+
         setLoading: (state, action) => {
-            state.loading = action.payload
+            state.loading = action.payload;
         },
+
+        setError: (state, action) => {
+            state.error = action.payload;
+        },
+
         deleteConversation: (state, action) => {
             const conversationId = action.payload;
 
             state.conversations = state.conversations.filter(
-                (c) => c._id !== conversationId
+                (c) => c.convoId !== conversationId
             );
 
             delete state.messages[conversationId];
@@ -68,10 +97,19 @@ const chatSlice = createSlice({
                 state.activeConversationId = null;
             }
         },
-    }
-})
+    },
+});
 
+export const {
+    setActiveConversationId,
+    addConversations,
+    setConversations,
+    addMessages,
+    appendMessageChunk,
+    setConversationMessages,
+    setLoading,
+    setError,
+    deleteConversation,
+} = chatSlice.actions;
 
-export const { setActiveConversationId, setError, setLoading, deleteConversation, addConversations, addMessages, appendMessageChunk } = chatSlice.actions
-
-export default chatSlice.reducer
+export default chatSlice.reducer;
