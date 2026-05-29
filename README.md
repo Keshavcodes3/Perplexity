@@ -1,73 +1,99 @@
 # ✨ NexaAI
 
-NexaAI is a full-stack AI chat application inspired by modern conversational assistants.
+NexaAI is a modern full-stack AI workspace built for seamless conversations, intelligent search, project organization, and productivity.
 
-It lets users create conversations, continue previous chats, and interact with an AI assistant through a clean and responsive interface.
+Inspired by tools like Perplexity and ChatGPT, NexaAI allows users to chat with AI, manage conversations, organize projects, and explore the web through an elegant and responsive interface.
 
-Built with React, Redux, Node.js, Express, and MongoDB.
-
-Backend URL : https://nexaai-tahr.onrender.com
-Frontend URL : nexa-ai-one-amber.vercel.app
+Built using React, Redux Toolkit, Node.js, Express, MongoDB, and modern AI integrations.
 
 ---
 
-## 🚀 Features
-
-- 💬 Real-time AI conversations
-- 🧠 Conversation history
-- ➕ Start a new chat anytime
-- 📂 Load previous conversations
-- ⚡ Redux state management
-- 🎨 Clean responsive UI with Tailwind CSS
-- 🔒 Backend API for chat + conversations
-- 🗄 MongoDB database integration
-
----
-
-## 🛠 Tech Stack
+# 🌐 Live Demo
 
 ### Frontend
 
-- React.js
-- Redux Toolkit
-- React Router
-- Tailwind CSS
-- Lucide React Icons
-- Axios
+https://nexa-ai-one-amber.vercel.app
 
 ### Backend
 
-- Node.js
-- Express.js
-- MongoDB
-- Mongoose
-
-### AI
-
-- OpenAI API / AI integration
+https://nexaai-tahr.onrender.com
 
 ---
 
-## 📁 Project Structure
+# 🚀 Features
+
+* 💬 AI-powered conversations
+* 🧠 Persistent chat history
+* 📂 Project & workspace management
+* 🔍 Web search integration using Tavily
+* 🔒 JWT Authentication & Protected Routes
+* 👤 User account system
+* 📊 Admin analytics dashboard
+* ⚡ Redux Toolkit state management
+* 🎨 Clean responsive UI with Tailwind CSS
+* 🌐 Production deployment on Vercel + Render
+* 🍪 Secure cookie-based authentication
+* 📱 Mobile responsive experience
+
+---
+
+# 🛠 Tech Stack
+
+## Frontend
+
+* React.js
+* Vite
+* Redux Toolkit
+* React Router DOM
+* Tailwind CSS
+* Axios
+* Lucide React
+* Framer Motion
+
+## Backend
+
+* Node.js
+* Express.js
+* MongoDB
+* Mongoose
+* JWT Authentication
+* Cookie Parser
+* CORS
+* Morgan
+
+## AI & Search
+
+* OpenAI API
+* Tavily Search API
+
+---
+
+# 📁 Project Structure
 
 ```bash
 NexaAI/
 │
-├── client/
+├── Frontend/
 │   ├── src/
+│   │   ├── API/
 │   │   ├── Components/
+│   │   ├── Features/
 │   │   ├── Hooks/
 │   │   ├── Redux/
-│   │   ├── Pages/
+│   │   ├── Utils/
 │   │   └── App.jsx
 │   │
-│   └── package.json
+│   ├── public/
+│   ├── vite.config.js
+│   └── vercel.json
 │
-├── server/
-│   ├── controllers/
-│   ├── models/
-│   ├── routes/
-│   ├── config/
+├── Backend/
+│   ├── Controllers/
+│   ├── Middlewares/
+│   ├── Models/
+│   ├── Routes/
+│   ├── Utils/
+│   ├── app.js
 │   └── server.js
 │
 └── README.md
@@ -75,26 +101,26 @@ NexaAI/
 
 ---
 
-## ⚙️ Installation
+# ⚙️ Installation
 
-Clone the repo:
+## Clone Repository
 
 ```bash
-git clone <your-repo-link>
+git clone <your-repository-url>
 cd NexaAI
 ```
 
 ---
 
-### Frontend setup
+# 💻 Frontend Setup
 
 ```bash
-cd client
+cd Frontend
 npm install
 npm run dev
 ```
 
-Runs on:
+Frontend runs on:
 
 ```bash
 http://localhost:5173
@@ -102,89 +128,152 @@ http://localhost:5173
 
 ---
 
-### Backend setup
+# ⚙️ Backend Setup
 
 ```bash
-cd server
+cd Backend
 npm install
 npm run dev
 ```
 
-Runs on:
+Backend runs on:
 
 ```bash
-http://localhost:5000
+http://localhost:3000
 ```
 
 ---
 
-## 🔑 Environment Variables
+# 🔑 Environment Variables
 
-Create `.env` inside backend:
+## Backend `.env`
 
 ```env
-PORT=5000
-MONGO_URI=your_mongodb_url
-OPENAI_API_KEY=your_api_key
+PORT=3000
+
+MONGO_URI=your_mongodb_uri
+
+JWT_SECRET=your_jwt_secret
+
+OPENAI_API_KEY=your_openai_api_key
+
+TAVILY_API_KEY=your_tavily_api_key
+
+NODE_ENV=development
 ```
 
 ---
 
-## 📌 Main Functionality
+## Frontend `.env`
 
-### New Chat
-
-Click **New Chat** from sidebar.
-
-- clears active conversation
-- routes to fresh chat page
+```env
+VITE_BACKEND_URL=http://localhost:3000
+```
 
 ---
 
-### Chat History
+# 🔐 Authentication
 
-Sidebar stores previous conversations.
+NexaAI uses:
 
-Selecting one loads all messages.
-
----
-
-### AI Messaging
-
-Users send prompt → backend processes → AI response returned.
-
-Messages are stored in database.
+* JWT-based authentication
+* HTTP-only cookies
+* Protected frontend routes
+* Secure backend middleware
+* Persistent login sessions
 
 ---
 
-## 🎨 UI
+# 📌 Core Functionalities
 
-Minimal modern layout:
+## 💬 AI Conversations
 
-- centered chat feed
-- sticky header
-- sidebar navigation
-- responsive design
+Users can:
 
----
-
-## 🔮 Future Improvements
-
-- authentication
-- markdown support
-- code highlighting
-- file uploads
-- streaming AI responses
-- themes / dark mode
+* Start new chats
+* Continue previous conversations
+* Store conversation history
+* Organize chats into projects
 
 ---
 
-## 👨‍💻 Author
+## 📂 Projects Workspace
 
-Built by **Keshav Sharma**
+Users can:
+
+* Create projects
+* Add conversations into projects
+* Manage organized AI workflows
 
 ---
 
-## 📄 License
+## 🔍 Web Search Integration
+
+Integrated Tavily search enables:
+
+* Real-time web results
+* AI-enhanced search responses
+* Smarter contextual answers
+
+---
+
+## 📊 Admin Dashboard
+
+Admin panel includes:
+
+* User analytics
+* Conversation statistics
+* Registration insights
+* Platform overview
+
+---
+
+# 🎨 UI & Experience
+
+Designed with a modern productivity-first interface:
+
+* Responsive layout
+* Sticky navigation
+* Sidebar workspace
+* Smooth UX
+* Mobile support
+* Clean typography
+* Minimal aesthetic
+
+---
+
+# 🚀 Deployment
+
+## Frontend Deployment
+
+* Hosted on Vercel
+
+## Backend Deployment
+
+* Hosted on Render
+
+---
+
+# 🔮 Future Improvements
+
+* Streaming AI responses
+* Markdown rendering
+* Code syntax highlighting
+* File uploads
+* Multi-model AI support
+* Real-time collaboration
+* Dark mode themes
+* AI agents & workflows
+* Voice interaction
+
+---
+
+# 👨‍💻 Author
+
+Built by **Keshav Chetri**
+
+---
+
+# 📄 License
 
 MIT License
