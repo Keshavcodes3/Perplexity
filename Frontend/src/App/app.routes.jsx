@@ -10,7 +10,7 @@ import Protect from './protect.jsx';
 export const router = createBrowserRouter([
     {
         path: "/",
-        element: <Navigate to="/chat" replace />
+        element: <Navigate to="/login" replace />
     },
     {
         path: "/chat",
