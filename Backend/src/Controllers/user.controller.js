@@ -71,7 +71,6 @@ export const loginUser = async (req, res) => {
             sameSite: "none",
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
-        res.set("token",token)
         return res.status(200).json({
             message: "Login successful",
             user: toSafeUser(user),
