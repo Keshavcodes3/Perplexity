@@ -20,6 +20,10 @@ import projectRoutes from "./Routes/project.routes.js"
 import adminRouter from "./Routes/admin.routes.js";
 import { apiRateLimit } from "./Middlewares/rateLimit.middleware.js";
 
+app.use('/',()=>{
+    return "Health is good"
+})
+
 //?use routes
 app.use("/api", apiRateLimit);
 app.use("/api/auth", authRouter);
