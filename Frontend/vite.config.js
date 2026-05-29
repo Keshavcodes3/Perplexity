@@ -13,7 +13,7 @@ export default defineConfig({
         secure: true,
         configure: (proxy) => {
           proxy.on('error', (err) => {
-            console.log('[proxy error]', err.message);
+            // proxy error suppressed in production
           });
           proxy.on('proxyRes', (proxyRes) => {
             // Disable response buffering for streaming endpoints

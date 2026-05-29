@@ -28,21 +28,17 @@ const Login = ({ onSuccess }) => {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        console.log("[Login Page] Form submitted with email:", values.email);
         clearError();
 
         const validationErrors = validateLogin(values);
         if (Object.keys(validationErrors).length) {
-            console.warn("[Login Page] Validation failed:", validationErrors);
             setErrors(validationErrors);
             return;
         }
 
         setStatus({ loading: true, message: "", type: "error" });
-        console.log("[Login Page] Invoking handleLogin hook...");
 
         const { success, data, error: loginError } = await handleLogin(values);
-        console.log("[Login Page] handleLogin hook outcome:", { success, data, error: loginError });
 
         if (success) {
             setStatus({
@@ -51,10 +47,8 @@ const Login = ({ onSuccess }) => {
                 type: "success",
             });
             onSuccess?.(data);
-            console.log("[Login Page] Login success, navigating to /chat");
             navigate('/chat');
         } else {
-            console.error("[Login Page] Login failed details:", loginError);
             setStatus({
                 loading: false,
                 message: loginError || "Login failed.",

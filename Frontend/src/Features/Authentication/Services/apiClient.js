@@ -11,30 +11,13 @@ const apiClient = axios.create({
 
 
 apiClient.interceptors.request.use(
-    (config) => {
-        console.log(`[Frontend API Request] ${config.method.toUpperCase()} to ${config.baseURL || ""}${config.url}`, {
-            headers: config.headers,
-            data: config.data
-        });
-        return config;
-    },
-    (error) => {
-        console.error(`[Frontend API Request Error]`, error);
-        return Promise.reject(error);
-    }
+    (config) => config,
+    (error) => Promise.reject(error)
 );
 
 apiClient.interceptors.response.use(
-    (response) => {
-        console.log(`[Frontend API Response Success] ${response.status} from ${response.config.url}`, response.data);
-        return response;
-    },
+    (response) => response,
     (error) => {
-        console.error(`[Frontend API Response Error] from ${error.config?.url || "unknown URL"}:`, {
-            status: error.response?.status,
-            data: error.response?.data,
-            message: error.message
-        });
         const message =
             error.response?.data?.message ||
             error.message ||

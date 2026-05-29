@@ -89,10 +89,14 @@ export const loginUser = async (req, res) => {
 
 export const logoutUser = async (req, res) => {
     try {
+        // MUST match the exact cookie attributes used in loginUser.
+        // If sameSite/secure differ, the browser treats them as different
+        // cookies and clearCookie silently does nothing.
         res.clearCookie("token", {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
+            secure: true,
+            sameSite: "none",
+            path: "/",
         });
 
         return res.status(200).json({
