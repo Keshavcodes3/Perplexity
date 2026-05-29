@@ -71,7 +71,7 @@ export const loginUser = async (req, res) => {
             sameSite: "none",
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
-
+        res.set("token",token)
         return res.status(200).json({
             message: "Login successful",
             user: toSafeUser(user),
@@ -89,9 +89,7 @@ export const loginUser = async (req, res) => {
 
 export const logoutUser = async (req, res) => {
     try {
-        // MUST match the exact cookie attributes used in loginUser.
-        // If sameSite/secure differ, the browser treats them as different
-        // cookies and clearCookie silently does nothing.
+     
         res.clearCookie("token", {
             httpOnly: true,
             secure: true,
