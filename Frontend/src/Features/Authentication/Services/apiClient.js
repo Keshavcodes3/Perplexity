@@ -9,7 +9,7 @@ const apiClient = axios.create({
     },
 });
 
-// Request interceptor for debug logging
+
 apiClient.interceptors.request.use(
     (config) => {
         console.log(`[Frontend API Request] ${config.method.toUpperCase()} to ${config.baseURL || ""}${config.url}`, {

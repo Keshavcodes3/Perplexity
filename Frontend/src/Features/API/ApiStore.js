@@ -1,1 +1,1 @@
-export const BASEURL=""
+export const BASEURL="https://nexaai-tahr.onrender.com"
