@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import User from "../Models/user.model.js";
 
 export const IdentifyUser = async (req, res, next) => {
     const token = req.cookies.token
@@ -21,3 +22,24 @@ export const IdentifyUser = async (req, res, next) => {
         })
     }
 }
+
+export const RequireAdmin = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id).select("role");
+
+        if (!user || user.role !== "admin") {
+            return res.status(403).json({
+                message: "Admin access required",
+                success: false,
+            });
+        }
+
+        next();
+    } catch (err) {
+        return res.status(500).json({
+            message: "Internal server error",
+            success: false,
+            error: err.message,
+        });
+    }
+};

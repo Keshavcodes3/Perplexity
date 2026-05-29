@@ -5,7 +5,7 @@ node_modules/
 .env
 .env.*
 !.env.example
-
+.vscode
 # Logs
 logs/
 *.log

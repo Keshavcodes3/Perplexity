@@ -5,7 +5,7 @@ const getBackendUrl = () =>
     (process.env.BACKEND_URL || "http://localhost:3000").replace(/\/$/, "");
 
 export const createEmailVerificationToken = (userId) =>
-    jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    jwt.sign({ id: userId, purpose: "email_verification" }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
 export const getVerificationUrl = (token) =>
     `${getBackendUrl()}/api/auth/verify-email/${token}`;

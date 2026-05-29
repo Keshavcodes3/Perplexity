@@ -4,6 +4,7 @@ import Login from '../Features/Authentication/Pages/Login.jsx';
 import ChatPage from '../Features/Chat/Pages/ChatPage.jsx';
 import Projects from '../Features/Projects/Pages/Projects.jsx';
 import Analytics from '../Features/Analytics/Pages/Analytics.jsx';
+import AdminDashboard from '../Features/Admin/Pages/AdminDashboard.jsx';
 import Protect from './protect.jsx';
 
 export const router = createBrowserRouter([
@@ -32,6 +33,14 @@ export const router = createBrowserRouter([
         element: (
             <Protect>
                 <Analytics/>
+            </Protect>
+        )
+    },
+    {
+        path: "/admin",
+        element: (
+            <Protect>
+                <AdminDashboard/>
             </Protect>
         )
     },

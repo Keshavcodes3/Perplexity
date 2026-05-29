@@ -10,16 +10,14 @@ import AlertBanner from "../Components/AlertBanner.jsx";
 import { useAuthForm } from "../Hooks/useAuthForm.js";
 import { useAuth } from "../Hooks/useAuth.jsx";
 import { Link } from "react-router-dom";
+import { AVATAR_OPTIONS } from "../Utils/constants.js";
 
-const validateStep1 = ({ name, avatarError }) => {
+const validateStep1 = ({ name }) => {
     const errors = {};
     if (!name.trim()) {
         errors.name = "Name is required.";
     } else if (name.trim().length < 2) {
         errors.name = "Name must be at least 2 characters.";
-    }
-    if (avatarError) {
-        errors.avatar = avatarError;
     }
     return errors;
 };
@@ -57,16 +55,7 @@ const Register = ({ onSuccess }) => {
         password: "",
     });
 
-    const [avatar, setAvatar] = useState({
-        file: null,
-        preview: "",
-        error: "",
-    });
-
-    const handleAvatarChange = ({ file, preview, error: avatarError }) => {
-        setAvatar({ file, preview, error: avatarError });
-        setErrors((prev) => ({ ...prev, avatar: avatarError }));
-    };
+    const [avatar, setAvatar] = useState(AVATAR_OPTIONS[0]);
 
     const handleContinue = (e) => {
         e.preventDefault();
@@ -74,7 +63,6 @@ const Register = ({ onSuccess }) => {
         
         const validationErrors = validateStep1({
             name: values.name,
-            avatarError: avatar.error,
         });
 
         if (Object.keys(validationErrors).length) {
@@ -104,7 +92,7 @@ const Register = ({ onSuccess }) => {
 
         const { success, data, error: registerError } = await handleRegister({
             ...values,
-            avatar: avatar.preview || "",
+            avatar,
         });
 
         if (success) {
@@ -114,7 +102,7 @@ const Register = ({ onSuccess }) => {
                 type: "success",
             });
             setValues({ name: "", email: "", password: "" });
-            setAvatar({ file: null, preview: "", error: "" });
+            setAvatar(AVATAR_OPTIONS[0]);
             onSuccess?.(data);
         } else {
             setStatus({
@@ -169,9 +157,8 @@ const Register = ({ onSuccess }) => {
                             className="space-y-6"
                         >
                             <AvatarUpload
-                                preview={avatar.preview}
-                                onChange={handleAvatarChange}
-                                error={errors.avatar}
+                                selectedAvatar={avatar}
+                                onChange={setAvatar}
                             />
 
                             <FormField

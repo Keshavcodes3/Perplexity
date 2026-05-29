@@ -25,11 +25,16 @@ const userSchema = new mongoose.Schema(
         },
         isVerified: {
             type: Boolean,
-            default: false,
+            default: true,
         },
         avatar: {
             type: String,
             default: "",
+        },
+        role: {
+            type: String,
+            enum: ["user", "admin"],
+            default: "user",
         },
     },
     {

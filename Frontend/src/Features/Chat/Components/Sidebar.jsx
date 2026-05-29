@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Sparkles, Plus, BarChart2, LogOut, FolderGit2 } from 'lucide-react';
+import { Sparkles, Plus, BarChart2, LogOut, FolderGit2, ShieldCheck } from 'lucide-react';
 import ChatHistory from './ChatHistory.jsx';
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
@@ -20,6 +20,7 @@ const Sidebar = () => {
   const { user } = useSelector((state) => state.auth);
   const userName = user?.username || user?.name || user?.email?.split('@')[0] || 'User';
   const userPlan = user?.plan || 'Free Plan';
+  const isAdmin = user?.role === "admin";
 
   const resetChatId = () => {
     dispatch(setActiveConversationId(null));
@@ -95,6 +96,22 @@ const Sidebar = () => {
           <BarChart2 className="w-4 h-4" />
           Analytics
         </NavLink>
+
+        {isAdmin && (
+          <NavLink
+            to="/admin"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-orange-100 text-orange-600'
+                  : 'text-slate-500 hover:bg-orange-50 hover:text-orange-600'
+              }`
+            }
+          >
+            <ShieldCheck className="w-4 h-4" />
+            Admin
+          </NavLink>
+        )}
       </nav>
 
       {/* Chat History */}
@@ -105,7 +122,7 @@ const Sidebar = () => {
         <div className="flex items-center gap-3 hover:bg-slate-100 p-2 rounded-xl cursor-pointer transition-colors group">
           <div className="w-9 h-9 rounded-full bg-orange-100 overflow-hidden shadow-sm shrink-0 flex items-center justify-center">
             <img
-              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=f97316&color=fff&size=36`}
+              src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=f97316&color=fff&size=36`}
               alt={userName}
               className="w-full h-full object-cover"
             />

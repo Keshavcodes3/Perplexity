@@ -4,6 +4,13 @@ let transporter;
 
 const getTransporter = () => {
     if (!transporter) {
+        const requiredEnvVars = ["EMAIL_USER", "CLIENT_ID", "CLIENT_SECRET", "REFRESH_TOKEN"];
+        const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
+
+        if (missingEnvVars.length > 0) {
+            throw new Error(`Missing email environment variables: ${missingEnvVars.join(", ")}`);
+        }
+
         transporter = nodemailer.createTransport({
             service: "gmail",
             auth: {
