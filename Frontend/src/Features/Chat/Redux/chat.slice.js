@@ -10,6 +10,7 @@ const chatSlice = createSlice({
         loading: false,
         streamingConversationId: null,
         error: null,
+        isSidebarOpen: false,
     },
 
     reducers: {
@@ -147,6 +148,10 @@ const chatSlice = createSlice({
                 state.streamingConversationId = null;
             }
         },
+
+        setSidebarOpen: (state, action) => {
+            state.isSidebarOpen = action.payload;
+        },
     },
 });
 
@@ -163,6 +168,7 @@ export const {
     setStreamingConversationId,
     setError,
     deleteConversation,
+    setSidebarOpen,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

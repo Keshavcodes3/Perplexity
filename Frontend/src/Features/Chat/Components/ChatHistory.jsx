@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { MessageSquare, MoreHorizontal } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { setActiveConversationId } from "../Redux/chat.slice";
+import { setActiveConversationId, setSidebarOpen } from "../Redux/chat.slice";
 import ActionMenu from "../../Projects/Components/ProjectPopUp";
 import { createPortal } from "react-dom";
 
@@ -18,6 +18,7 @@ const ChatHistory = () => {
 
   const setActiveChat = ({ convoId }) => {
     dispatch(setActiveConversationId(convoId));
+    dispatch(setSidebarOpen(false));
   };
 
   const toggleMenu = (e, convoId) => {
