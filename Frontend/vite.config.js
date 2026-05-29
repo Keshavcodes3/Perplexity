@@ -8,8 +8,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:3000',
+        target: 'https://nexaai-tahr.onrender.com',
         changeOrigin: true,
+        secure: true,
         configure: (proxy) => {
           proxy.on('error', (err) => {
             console.log('[proxy error]', err.message);
