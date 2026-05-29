@@ -6,11 +6,32 @@ import morgan from 'morgan'
 const app = express();
 app.use(morgan('dev'))
 
-// CORS configuration supporting localhost origins
+// CORS configuration — NO trailing slashes on origins (browsers omit them in Origin header)
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "https://nexaai-tahr.onrender.com",
+    "https://nexa-ai-one-amber.vercel.app",
+];
+
 app.use(cors({
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "https://nexaai-tahr.onrender.com/","https://nexa-ai-one-amber.vercel.app/"],
+    origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, curl, Postman)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error(`CORS blocked: ${origin}`));
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
+    exposedHeaders: ["Set-Cookie"],
 }));
+
+// Handle preflight requests for all routes
+app.options("*", cors());
 
 app.use(express.json())
 app.use(cookieParser())
