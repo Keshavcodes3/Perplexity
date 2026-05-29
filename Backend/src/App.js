@@ -6,6 +6,9 @@ import morgan from 'morgan'
 const app = express();
 app.use(morgan('dev'))
 
+
+app.use(express.json())
+app.use(cookieParser())
 // CORS configuration — NO trailing slashes on origins (browsers omit them in Origin header)
 const allowedOrigins = [
     "http://localhost:5173",
@@ -16,6 +19,7 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
+
     origin: (origin, callback) => {
         // Allow requests with no origin (mobile apps, curl, Postman)
         if (!origin) return callback(null, true);
@@ -30,11 +34,7 @@ app.use(cors({
     exposedHeaders: ["Set-Cookie"],
 }));
 
-// Handle preflight requests for all routes
-app.options("*", cors());
-
-app.use(express.json())
-app.use(cookieParser())
+app.options(/.*/, cors());
 
 // Debug logging middleware for incoming requests
 app.use((req, res, next) => {
