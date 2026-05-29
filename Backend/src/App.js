@@ -33,9 +33,8 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Handle preflight for ALL routes using the SAME config (not default cors())
-// Default cors() allows all origins — must pass corsOptions explicitly
-app.options("*", cors(corsOptions));
+// Express 5 dropped bare "*" wildcard — must use regex for preflight handler
+app.options(/(.*)/, cors(corsOptions));
 
 // ─── BODY PARSERS ────────────────────────────────────────────────────────────
 app.use(express.json());
