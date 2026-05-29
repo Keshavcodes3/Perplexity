@@ -59,6 +59,7 @@ const Register = ({ onSuccess }) => {
 
     const handleContinue = (e) => {
         e.preventDefault();
+        console.log("[Register Page] Step 1 submitted. Name:", values.name);
         clearError();
         
         const validationErrors = validateStep1({
@@ -66,16 +67,19 @@ const Register = ({ onSuccess }) => {
         });
 
         if (Object.keys(validationErrors).length) {
+            console.warn("[Register Page] Step 1 validation failed:", validationErrors);
             setErrors(validationErrors);
             return;
         }
 
+        console.log("[Register Page] Step 1 valid. Transitioning to Step 2.");
         setErrors({});
         setStep(2);
     };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+        console.log("[Register Page] Step 2 submitted. Email:", values.email);
         clearError();
 
         const validationErrors = validateStep2({
@@ -84,16 +88,19 @@ const Register = ({ onSuccess }) => {
         });
 
         if (Object.keys(validationErrors).length) {
+            console.warn("[Register Page] Step 2 validation failed:", validationErrors);
             setErrors(validationErrors);
             return;
         }
 
         setStatus({ loading: true, message: "", type: "error" });
+        console.log("[Register Page] Invoking handleRegister hook...");
 
         const { success, data, error: registerError } = await handleRegister({
             ...values,
             avatar,
         });
+        console.log("[Register Page] handleRegister hook outcome:", { success, data, error: registerError });
 
         if (success) {
             setStatus({
@@ -101,10 +108,12 @@ const Register = ({ onSuccess }) => {
                 message: data?.message || "Account created successfully.",
                 type: "success",
             });
+            console.log("[Register Page] Registration successful! Clearing form.");
             setValues({ name: "", email: "", password: "" });
             setAvatar(AVATAR_OPTIONS[0]);
             onSuccess?.(data);
         } else {
+            console.error("[Register Page] Registration failed error details:", registerError);
             setStatus({
                 loading: false,
                 message: registerError || "Registration failed.",
