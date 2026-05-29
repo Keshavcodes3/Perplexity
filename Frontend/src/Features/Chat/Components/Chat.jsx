@@ -46,7 +46,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-white font-sans text-slate-900">
+    <div className="flex flex-1 flex-col overflow-hidden bg-white font-sans text-slate-900">
       <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md">
         <div className="flex w-full items-center justify-between gap-4 px-6 py-4">
           <div className="flex min-w-0 items-center gap-3">

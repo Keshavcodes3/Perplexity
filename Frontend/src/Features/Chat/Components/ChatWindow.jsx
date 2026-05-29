@@ -21,7 +21,7 @@ const ChatWindow = () => {
   }, [activeConversationId, loading]);
 
   return (
-    <div className="relative flex h-screen flex-1 flex-col overflow-hidden bg-white">
+    <div className="relative flex flex-1 flex-col overflow-hidden bg-white">
       <div className="flex-1 overflow-y-auto">
         {activeConversationId == null ? (
           <NoChat onModeSelect={handleCardClick} />
