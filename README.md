@@ -6,6 +6,9 @@ It lets users create conversations, continue previous chats, and interact with a
 
 Built with React, Redux, Node.js, Express, and MongoDB.
 
+Backend URL : https://nexaai-tahr.onrender.com
+Frontend URL : nexa-ai-one-amber.vercel.app
+
 ---
 
 ## 🚀 Features
